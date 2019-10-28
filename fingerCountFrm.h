@@ -26,6 +26,7 @@
 //Header Include Start and Header Include End.
 //wxDev-C++ designer will remove them. Add custom headers after the block.
 ////Header Include Start
+#include <wx/filedlg.h>
 #include <wx/stattext.h>
 #include <wx/button.h>
 #include <wx/statbmp.h>
@@ -44,12 +45,14 @@ class fingerCountFrm : public wxFrame
 	public:
 		fingerCountFrm(wxWindow *parent, wxWindowID id = 1, const wxString &title = wxT("Finger Counting"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = fingerCountFrm_STYLE);
 		virtual ~fingerCountFrm();
+		void buttonSelectImageClick(wxCommandEvent& event);
 		
 	private:
 		//Do not add custom control declarations between
 		//GUI Control Declaration Start and GUI Control Declaration End.
 		//wxDev-C++ will remove them. Add custom code after the block.
 		////GUI Control Declaration Start
+		wxFileDialog *WxOpenFileDialog1;
 		wxStaticText *actualFingerCount;
 		wxStaticText *labelFingerCount;
 		wxStaticText *actualDefectCount;
