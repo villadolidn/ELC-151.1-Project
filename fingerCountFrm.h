@@ -26,10 +26,14 @@
 //Header Include Start and Header Include End.
 //wxDev-C++ designer will remove them. Add custom headers after the block.
 ////Header Include Start
+#include <wx/stattext.h>
+#include <wx/button.h>
+#include <wx/statbmp.h>
 ////Header Include End
 
 ////Dialog Style Start
-#define fingerCountFrm_STYLE wxCAPTION | wxRESIZE_BORDER | wxSYSTEM_MENU | wxDIALOG_NO_PARENT | wxMINIMIZE_BOX | wxMAXIMIZE_BOX | wxCLOSE_BOX
+#undef fingerCountFrm_STYLE
+#define fingerCountFrm_STYLE wxCAPTION | wxRESIZE_BORDER | wxSYSTEM_MENU | wxMINIMIZE_BOX | wxMAXIMIZE_BOX | wxCLOSE_BOX
 ////Dialog Style End
 
 class fingerCountFrm : public wxFrame
@@ -46,6 +50,17 @@ class fingerCountFrm : public wxFrame
 		//GUI Control Declaration Start and GUI Control Declaration End.
 		//wxDev-C++ will remove them. Add custom code after the block.
 		////GUI Control Declaration Start
+		wxStaticText *actualFingerCount;
+		wxStaticText *labelFingerCount;
+		wxStaticText *actualDefectCount;
+		wxStaticText *labelDefectCount;
+		wxButton *buttonCountFingers;
+		wxButton *buttonThreshold;
+		wxButton *buttonSelectImage;
+		wxStaticBitmap *bitmapDefects;
+		wxStaticBitmap *bitmapThreshold;
+		wxStaticBitmap *bitmapOriginal;
+		wxStaticBitmap *WxStaticBitmap2;
 		////GUI Control Declaration End
 		
 	private:
@@ -56,6 +71,17 @@ class fingerCountFrm : public wxFrame
 		enum
 		{
 			////GUI Enum Control ID Start
+			ID_ACTUALFINGERCOUNT = 1013,
+			ID_LABELFINGERCOUNT = 1012,
+			ID_ACTUALDEFECTCOUNT = 1011,
+			ID_LABELDEFECTCOUNT = 1010,
+			ID_BUTTONCOUNTFINGERS = 1009,
+			ID_BUTTONTHRESHOLD = 1008,
+			ID_BUTTONSELECTIMAGE = 1007,
+			ID_BITMAPDEFECTS = 1005,
+			ID_BITMAPTHRESHOLD = 1004,
+			ID_BITMAPORIGINAL = 1003,
+			ID_WXSTATICBITMAP2 = 1002,
 			////GUI Enum Control ID End
 			ID_DUMMY_VALUE_ //don't remove this value unless you have other enum values
 		};
