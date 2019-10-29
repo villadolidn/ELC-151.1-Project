@@ -1,14 +1,14 @@
 //---------------------------------------------------------------------------
 //
-// Name:        fingerCountApp.h
+// Name:        fingerCountv3App.h
 // Author:      Nathan Villadolid
-// Created:     10/28/2019 12:49:45 PM
+// Created:     10/29/2019 9:31:36 PM
 // Description: 
 //
 //---------------------------------------------------------------------------
 
-#ifndef __FINGERCOUNTFRMApp_h__
-#define __FINGERCOUNTFRMApp_h__
+#ifndef __FINGERCOUNTV3FRMApp_h__
+#define __FINGERCOUNTV3FRMApp_h__
 
 #ifdef __BORLANDC__
 	#pragma hdrstop
@@ -20,7 +20,7 @@
 	#include <wx/wxprec.h>
 #endif
 
-class fingerCountFrmApp : public wxApp
+class fingerCountv3FrmApp : public wxApp
 {
 	public:
 		bool OnInit();

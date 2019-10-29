@@ -1,26 +1,26 @@
 //---------------------------------------------------------------------------
 //
-// Name:        fingerCountApp.cpp
+// Name:        fingerCountv3App.cpp
 // Author:      Nathan Villadolid
-// Created:     10/28/2019 12:49:45 PM
+// Created:     10/29/2019 9:31:36 PM
 // Description: 
 //
 //---------------------------------------------------------------------------
 
-#include "fingerCountApp.h"
-#include "fingerCountFrm.h"
+#include "fingerCountv3App.h"
+#include "fingerCountv3Frm.h"
 
-IMPLEMENT_APP(fingerCountFrmApp)
+IMPLEMENT_APP(fingerCountv3FrmApp)
 
-bool fingerCountFrmApp::OnInit()
+bool fingerCountv3FrmApp::OnInit()
 {
-    fingerCountFrm* frame = new fingerCountFrm(NULL);
+    fingerCountv3Frm* frame = new fingerCountv3Frm(NULL);
     SetTopWindow(frame);
     frame->Show();
     return true;
 }
  
-int fingerCountFrmApp::OnExit()
+int fingerCountv3FrmApp::OnExit()
 {
 	return 0;
 }
