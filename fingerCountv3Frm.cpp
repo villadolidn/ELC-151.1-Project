@@ -1,14 +1,14 @@
 ///-----------------------------------------------------------------
 ///
-/// @file      fingerCountFrm.cpp
+/// @file      fingerCountv3Frm.cpp
 /// @author    Nathan Villadolid
-/// Created:   10/28/2019 12:49:45 PM
+/// Created:   10/29/2019 9:31:36 PM
 /// @section   DESCRIPTION
-///            fingerCountFrm class implementation
+///            fingerCountv3Frm class implementation
 ///
 ///------------------------------------------------------------------
 
-#include "fingerCountFrm.h"
+#include "fingerCountv3Frm.h"
 
 //Do not add custom headers between
 //Header Include Start and Header Include End
@@ -17,39 +17,46 @@
 ////Header Include End
 
 //----------------------------------------------------------------------------
-// fingerCountFrm
+// fingerCountv3Frm
 //----------------------------------------------------------------------------
 //Add Custom Events only in the appropriate block.
 //Code added in other places will be removed by wxDev-C++
 ////Event Table Start
-BEGIN_EVENT_TABLE(fingerCountFrm, wxFrame)
+BEGIN_EVENT_TABLE(fingerCountv3Frm,wxFrame)
 	////Manual Code Start
 	////Manual Code End
-	EVT_CLOSE(fingerCountFrm::OnClose)
+	
+	EVT_CLOSE(fingerCountv3Frm::OnClose)
 END_EVENT_TABLE()
 ////Event Table End
 
-fingerCountFrm::fingerCountFrm(wxWindow *parent, wxWindowID id, const wxString &title, const wxPoint &position, const wxSize& size, long style)
+fingerCountv3Frm::fingerCountv3Frm(wxWindow *parent, wxWindowID id, const wxString &title, const wxPoint &position, const wxSize& size, long style)
 : wxFrame(parent, id, title, position, size, style)
 {
 	CreateGUIControls();
 }
 
-fingerCountFrm::~fingerCountFrm()
+fingerCountv3Frm::~fingerCountv3Frm()
 {
 }
 
-void fingerCountFrm::CreateGUIControls()
+void fingerCountv3Frm::CreateGUIControls()
 {
 	//Do not add custom code between
 	//GUI Items Creation Start and GUI Items Creation End
 	//wxDev-C++ designer will remove them.
 	//Add the custom code before or after the blocks
 	////GUI Items Creation Start
+
+	SetTitle(_("Finger Counting"));
+	SetIcon(wxNullIcon);
+	SetSize(8,8,880,599);
+	Center();
+	
 	////GUI Items Creation End
 }
 
-void fingerCountFrm::OnClose(wxCloseEvent& event)
+void fingerCountv3Frm::OnClose(wxCloseEvent& event)
 {
 	Destroy();
 }

@@ -1,15 +1,15 @@
 ///-----------------------------------------------------------------
 ///
-/// @file      fingerCountFrm.h
+/// @file      fingerCountv3Frm.h
 /// @author    Nathan Villadolid
-/// Created:   10/28/2019 12:49:45 PM
+/// Created:   10/29/2019 9:31:36 PM
 /// @section   DESCRIPTION
-///            fingerCountFrm class declaration
+///            fingerCountv3Frm class declaration
 ///
 ///------------------------------------------------------------------
 
-#ifndef __FINGERCOUNTFRM_H__
-#define __FINGERCOUNTFRM_H__
+#ifndef __FINGERCOUNTV3FRM_H__
+#define __FINGERCOUNTV3FRM_H__
 
 #ifdef __BORLANDC__
 	#pragma hdrstop
@@ -29,17 +29,18 @@
 ////Header Include End
 
 ////Dialog Style Start
-#define fingerCountFrm_STYLE wxCAPTION | wxRESIZE_BORDER | wxSYSTEM_MENU | wxDIALOG_NO_PARENT | wxMINIMIZE_BOX | wxMAXIMIZE_BOX | wxCLOSE_BOX
+#undef fingerCountv3Frm_STYLE
+#define fingerCountv3Frm_STYLE wxCAPTION | wxSYSTEM_MENU | wxMINIMIZE_BOX | wxMAXIMIZE_BOX | wxCLOSE_BOX
 ////Dialog Style End
 
-class fingerCountFrm : public wxFrame
+class fingerCountv3Frm : public wxFrame
 {
 	private:
 		DECLARE_EVENT_TABLE();
 		
 	public:
-		fingerCountFrm(wxWindow *parent, wxWindowID id = 1, const wxString &title = wxT("Finger Counting"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = fingerCountFrm_STYLE);
-		virtual ~fingerCountFrm();
+		fingerCountv3Frm(wxWindow *parent, wxWindowID id = 1, const wxString &title = wxT("Finger Counting"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = fingerCountv3Frm_STYLE);
+		virtual ~fingerCountv3Frm();
 		
 	private:
 		//Do not add custom control declarations between
