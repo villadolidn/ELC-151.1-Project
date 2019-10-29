@@ -84,7 +84,54 @@ void fingerCountv3Frm::OnClose(wxCloseEvent& event)
 /*****************************************
 FUNCTIONSSSSSSS
 *******************************************/
-void drawContour(int& r, int& g, int& b){
+void nextClockwise(int x_b, int y_b, int &x, int &y, int x_p, int y_p)
+{
+    int xDiff = x_p - x_b;
+    int yDiff = y_p - y_b;
+    
+    switch (xDiff)
+    {
+        case -1:
+            switch (yDiff)
+            {
+                case -1:
+                    x++;
+                    break;
+                case 0:
+                    y--;
+                    break;
+                case 1:
+                    y--;
+                    break;
+            }
+            break;
+        case 0:
+            switch (yDiff)
+            {
+                case -1:
+                    x++;
+                    break;
+                case 1:
+                    x--;
+                    break;
+            }
+            break;
+        case 1:
+            switch (yDiff)
+            {
+                case -1:
+                    y++;
+                    break;
+                case 0:
+                    y++;
+                    break;
+                case 1:
+                    x--;
+                    break;
+            }
+            break;
+        
+    }
     
 }
 
@@ -144,26 +191,78 @@ void fingerCountv3Frm::buttonInsertImageClick(wxCommandEvent& event)
  */
 void fingerCountv3Frm::buttonObtainDefectsClick(wxCommandEvent& event)
 {
+    bool startSet = false;
+    bool gettingContour = true;
     if (openImageFlag)
     {
         int height = input.GetHeight();
         int width = input.GetWidth();
         
+        // necessary values for the contour
+        int x_s = 0;
+        int y_s = height-1;
+        int x_b = 0;
+        int y_b = height-1;
+        int x_p = 0;
+        int y_p = height-1;
+        int x = 0;
+        int y = height-1;
+        
+        
         display.Create(width, height);
         bg.Create(width, height);
         
-        for (int x = 0; x < width; x++)
+        // Moore's Neighboorhood
+        while (gettingContour)
         {
-            for (int y = 0; y < height; y++)
+            // obtaining color values for a certain pixel
+            int red = (input.GetRed(x,y));
+            int green = (input.GetGreen(x,y));
+            int blue = (input.GetBlue(x,y));
+            wxImage::RGBValue rgbVal = wxImage::RGBValue(red, green, blue)
+            
+            if (red != 255 && green != 255 && blue != 255)
             {
-                int redVal = input.GetRed(x, y);
-                int greenVal = input.GetGreen(x, y);
-                int blueVal = input.GetBlue(x, y);
-                wxImage::RGBValue rgb = wxImage::RGBValue(redVal, greenVal, blueVal);
-                
-                drawContour(redVal, greenVal, blueVal); //MAKE SURE THESE ARE QUERIES
-                display.SetRGB(x, y, redVal, greenVal, blueVal);
-                bg.SetRGB(x, y, 69, 69, 69);
+                if (!startSet)
+                {
+                    startSet = true; // remove flag
+                    
+                    x_s = x; // set starting pixel
+                    y_s = y;
+                    
+                    display.SetRGB(x_s, y_s, 255, 0, 0); // paint pixel red
+                    
+                    x_p = x_s;
+                    y_p = y_s;
+                    
+                    x_b = x_s-1;
+                    y_b = y_s;
+                    
+                    nextClockwise(x_b, y_b, x, y, x_p, y_p);
+                }
+                else
+                {
+                    display.SetRGB(x, y, 255, 0, 0);
+                    x_b = x_p;
+                    y_b = x_y;
+                    x_p = x;
+                    y_p = y;
+                    nextClockwise(x_b, y_b, x, y, x_p, y_p);
+                }
+            }
+            else if (startSet)
+            {
+                x_b = x;
+                y_b = y;
+                nextClockwise(x_b, y_b, x, y, x_p, y_p);
+            }
+            
+            if (startSet && x_s == x && y_s == y)
+                gettingContour = false;
+            
+        }
+            
+        
     }
     else
     {
