@@ -84,7 +84,7 @@ void fingerCountv3Frm::OnClose(wxCloseEvent& event)
 /*****************************************
 FUNCTIONSSSSSSS
 *******************************************/
-void obtainContour(int& r, int& g, int& b){
+void drawContour(int& r, int& g, int& b){
     
 }
 
@@ -95,9 +95,11 @@ void obtainContour(int& r, int& g, int& b){
 /*****************************************
 EVENTS
 *******************************************/
+
 /*
  * buttonInsertImageClick
  */
+ 
 wxImage input;
 wxImage display;
 wxImage bg;
@@ -142,7 +144,7 @@ void fingerCountv3Frm::buttonInsertImageClick(wxCommandEvent& event)
  */
 void fingerCountv3Frm::buttonObtainDefectsClick(wxCommandEvent& event)
 {
-	if (openImageFlag)
+    if (openImageFlag)
     {
         int height = input.GetHeight();
         int width = input.GetWidth();
@@ -159,7 +161,7 @@ void fingerCountv3Frm::buttonObtainDefectsClick(wxCommandEvent& event)
                 int blueVal = input.GetBlue(x, y);
                 wxImage::RGBValue rgb = wxImage::RGBValue(redVal, greenVal, blueVal);
                 
-                obtainContour(redVal, greenVal, blueVal); //MAKE SURE THESE ARE QUERIES
+                drawContour(redVal, greenVal, blueVal); //MAKE SURE THESE ARE QUERIES
                 display.SetRGB(x, y, redVal, greenVal, blueVal);
                 bg.SetRGB(x, y, 69, 69, 69);
     }
