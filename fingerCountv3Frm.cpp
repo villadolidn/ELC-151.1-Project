@@ -48,9 +48,26 @@ void fingerCountv3Frm::CreateGUIControls()
 	//Add the custom code before or after the blocks
 	////GUI Items Creation Start
 
+	wxInitAllImageHandlers();   //Initialize graphic format handlers
+
+	labelFingerCount = new wxStaticText(this, ID_LABELFINGERCOUNT, _("Number of Fingers..."), wxPoint(641, 130), wxDefaultSize, 0, _("labelFingerCount"));
+
+	buttonObtainDefects = new wxButton(this, ID_BUTTONOBTAINDEFECTS, _("Count Fingers"), wxPoint(635, 86), wxSize(125, 28), 0, wxDefaultValidator, _("buttonObtainDefects"));
+
+	buttonObtainMask = new wxButton(this, ID_BUTTONOBTAINMASK, _("Obtain Mask"), wxPoint(634, 51), wxSize(125, 28), 0, wxDefaultValidator, _("buttonObtainMask"));
+
+	buttonInsertImage = new wxButton(this, ID_BUTTONINSERTIMAGE, _("Insert Image"), wxPoint(633, 13), wxSize(125, 28), 0, wxDefaultValidator, _("buttonInsertImage"));
+
+	bitmapOutput = new wxStaticBitmap(this, ID_BITMAPOUTPUT, wxNullBitmap, wxPoint(321, 13), wxSize(300, 300) );
+	bitmapOutput->SetToolTip(_("Output"));
+
+	bitmapInput = new wxStaticBitmap(this, ID_BITMAPINPUT, wxNullBitmap, wxPoint(7, 13), wxSize(300, 300) );
+	bitmapInput->SetToolTip(_("Input"));
+	bitmapInput->SetHelpText(_("Input"));
+
 	SetTitle(_("Finger Counting"));
 	SetIcon(wxNullIcon);
-	SetSize(8,8,880,599);
+	SetSize(8,8,880,378);
 	Center();
 	
 	////GUI Items Creation End
