@@ -28,6 +28,7 @@ BEGIN_EVENT_TABLE(fingerCountv3Frm,wxFrame)
 	
 	EVT_CLOSE(fingerCountv3Frm::OnClose)
 	EVT_BUTTON(ID_BUTTONOBTAINDEFECTS,fingerCountv3Frm::buttonObtainDefectsClick)
+	EVT_BUTTON(ID_BUTTONOBTAINMASK,fingerCountv3Frm::buttonObtainMaskClick)
 	EVT_BUTTON(ID_BUTTONINSERTIMAGE,fingerCountv3Frm::buttonInsertImageClick)
 END_EVENT_TABLE()
 ////Event Table End
@@ -219,7 +220,7 @@ void fingerCountv3Frm::buttonObtainDefectsClick(wxCommandEvent& event)
             int red = (input.GetRed(x,y));
             int green = (input.GetGreen(x,y));
             int blue = (input.GetBlue(x,y));
-            wxImage::RGBValue rgbVal = wxImage::RGBValue(red, green, blue)
+            wxImage::RGBValue rgbVal = wxImage::RGBValue(red, green, blue);
             
             if (red != 255 && green != 255 && blue != 255)
             {
@@ -244,7 +245,7 @@ void fingerCountv3Frm::buttonObtainDefectsClick(wxCommandEvent& event)
                 {
                     display.SetRGB(x, y, 255, 0, 0);
                     x_b = x_p;
-                    y_b = x_y;
+                    y_b = x_p;
                     x_p = x;
                     y_p = y;
                     nextClockwise(x_b, y_b, x, y, x_p, y_p);
@@ -259,13 +260,45 @@ void fingerCountv3Frm::buttonObtainDefectsClick(wxCommandEvent& event)
             
             if (startSet && x_s == x && y_s == y)
                 gettingContour = false;
-            
         }
-            
         
-    }
+        // fills in the rest of the image with white
+        for (int x = 0; x < width; x++) 
+        {
+            for (int y = 0; y < height; y++)
+            {
+                int red = (input.GetRed(x,y));
+                int green = (input.GetGreen(x,y));
+                int blue = (input.GetBlue(x,y));
+                wxImage::RGBValue rgbVal = wxImage::RGBValue(red, green, blue);
+                if (red != 255 && green != 0 && blue != 0)
+                    display.SetRGB(x, y, 255, 255, 255);
+        }
+        
+        // displays the image
+        if (300 >= (height*300/width))
+        {
+            bitmapOutput->SetBitmap(bg.Scale(300, height*300/width));
+            bitmapOutput->SetBitmap(display.Scale(300, height * 300 / width));
+        }
+        else
+        {
+            bitmapOutput->SetBitmap(bg.Scale(300*width/height, 300));
+            bitmapOutput->SetBitmap(display.Scale(width*300/height, 300));
+        }
+        }
+        
+}
     else
     {
         wxMessageBox("Please load an image",_T("Image"),wxOK | wxICON_EXCLAMATION, this);
     }
+}
+
+/*
+ * buttonObtainMaskClick
+ */
+void fingerCountv3Frm::buttonObtainMaskClick(wxCommandEvent& event)
+{
+	// insert your code here
 }

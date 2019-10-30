@@ -47,6 +47,7 @@ class fingerCountv3Frm : public wxFrame
 		fingerCountv3Frm(wxWindow *parent, wxWindowID id = 1, const wxString &title = wxT("Finger Counting"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = fingerCountv3Frm_STYLE);
 		virtual ~fingerCountv3Frm();
 		void buttonObtainDefectsClick(wxCommandEvent& event);
+		void buttonObtainMaskClick(wxCommandEvent& event);
 		
 	private:
 		//Do not add custom control declarations between

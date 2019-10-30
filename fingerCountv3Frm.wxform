@@ -137,6 +137,7 @@ object frmNewForm: TfrmNewForm
     Height = 28
     Caption = 'Obtain Mask'
     TabOrder = 3
+    EVT_BUTTON = 'buttonObtainMaskClick'
     Wx_BKColor = clBlack
     Wx_ButtonStyle = []
     Wx_Class = 'wxButton'
