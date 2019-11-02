@@ -11,8 +11,12 @@
 #include "fingerCountv3Frm.h"
 #include <iostream> 
 #include <vector>
+#include <wx/log.h> 
+#include <wx/textfile.h>
+#include <sstream>
 
 using namespace std;
+
 
 //Do not add custom headers between
 //Header Include Start and Header Include End
@@ -171,13 +175,7 @@ void fingerCountv3Frm::buttonInsertImageClick(wxCommandEvent& event)
 	int width = input.GetWidth();
 	
 	bg.Create(width, height);
-	
-	// creates a white panel with the same dimensions as the image
-	for (int x = 0; x < width; x++) 
-    {
-        for (int y = 0; y < height; y++)
-            bg.SetRGB(x, y, 63, 63, 63);
-    }
+	bg.Clear(255);  // white bucket tool	
     
     if (300 >= (height*300/width))
     {
@@ -203,127 +201,208 @@ void fingerCountv3Frm::buttonObtainDefectsClick(wxCommandEvent& event)
         
         display.Create(width, height);
         bg.Create(width, height);
-        vector< vector<int> > vectThreshold(height, vector<int>(width, 1)); // 1 = white, 0 = black
-        vector< vector<int> > vectContour(height, vector<int>(width, 1)); // 1 = white, 0 = red
+        display.Clear(255);
+        bg.Clear(255);
         
-        
-        // storing the input pixel values in a vector
-		// note: y and x start at 1 in order to add a buffer
-        for (int y = 1; y < height; y++)
+        // top to bottom
+        for (int x = 1; x < width-1; x++) 
         {
-			for (int x = 1; x < width; x++)
+            for (int y = 1; y < height-1; y++)
             {
-				
-				int red = (input.GetRed(x,y));
-				int green = (input.GetGreen(x,y));
-				int blue = (input.GetBlue(x,y));
-				wxImage::RGBValue rgbVal = wxImage::RGBValue(red, green, blue);
-				
-				
-				if (red == 0 && green == 0 && blue == 0)
-				{
-					vectThreshold[y][x] = 0;  // black = 0
-				}
+                int red = (input.GetRed(x,y));
+                int green = (input.GetGreen(x,y));
+                int blue = (input.GetBlue(x,y));
+                
+                if (red == 0 && green == 0 && blue == 0)
+                {
+                    display.SetRGB(x, y, 255, 0, 0);
+                    // scans right after hitting boundary point
+                    for (int i = x+1; i < width-1; i++)
+                    {
+                        int red = (input.GetRed(i, y));
+                        int green = (input.GetGreen(i, y));
+                        int blue = (input.GetBlue(i, y));
+                        
+                        if (red == 0 && green == 0 && blue == 0)
+                        {
+                            display.SetRGB(i, y, 255, 0, 0);
+                            break;
+                        }
+                        
+                    }
+                    
+                    // scans left after hittign boundary point
+                    for (int i = x-1; i >0; i--)
+                    {
+                        int red = (input.GetRed(i, y));
+                        int green = (input.GetGreen(i, y));
+                        int blue = (input.GetBlue(i, y));
+                        
+                        if (red == 0 && green == 0 && blue == 0)
+                        {
+                            display.SetRGB(i, y, 255, 0, 0);
+                            break;
+                        }
+                        
+                    }
+                    break;
+                }
+                   
             }
         }
-		
-		// prepping the display image by painting it white
-		for (int x = 0; x < width; x++) 
-		{
-			for (int y = 0; y < height; y++)
-				display.SetRGB(x, y, 255, 255, 255);
-		}
-		
         
-        /* 
-        Moore's Neighboorhood Algorithm
-		I.
-        1. Find the first boundary pixel s
-        2. Insert s in vectContour
-        3. Set p = s
-        4. Set b = pixe from which s was entered
-        5. clockwise(c)
-		II.
-        while c != s
-            if c = 0
-                insert c in vectContour
-                b = p
-                p = c
-                clockwise(c)
-            else
-                b = c
-                clockwise(c)
-        */
-		
-		int s_x, s_y, p_x, p_y, b_x, b_y, c_x, c_y;
-		
-		// I.
-		bool startingPixelFound = false;
-		for (int y = height - 1; y >=0; y--)
-		{
-			for (int x = 0; x < width; x++)
-			{
-				if (vectThreshold[y][x]== 0)
-				{
-					startingPixelFound = true;
-					s_x = x;
-					s_y = y;
-					vectContour[y][x] = 0;
-					p_x = s_x;
-					p_y = s_y;
-					b_x = s_x -1;
-					b_y = s_y;
-					clockwise(p_x, p_y, b_x, b_y, c_x, c_y);
-					break;
-				}
-			}
-			if (startingPixelFound)
-				break;
-		}
-		// II.
-		while (c_x != s_x && c_y != s_y)
-		{
-			if (vectThreshold[c_y][c_x]== 0)
-			{
-				vectContour[c_y][c_x] = 0;
-				b_x = p_x;
-				b_y = p_y;
-				p_x = c_x;
-				p_y = c_y;
-				clockwise(p_x, p_y, b_x, b_y, c_x, c_y);
-			}
-			else
-			{
-				b_x = c_x;
-				b_y = c_y;
-				clockwise(p_x, p_y, b_x, b_y, c_x, c_y);
-			}
+        // left to right
+        for (int y = 1; y < height-1; y++) 
+        {
+            for (int x = 1; x < width-1; x++)
+            {
+                int red = (input.GetRed(x,y));
+                int green = (input.GetGreen(x,y));
+                int blue = (input.GetBlue(x,y));
+                
+                if (red == 0 && green == 0 && blue == 0)
+                {
+                    display.SetRGB(x, y, 255, 0, 0);
+                    
+                    // this scans downward after hitting a boundary point
+                    for (int i = y+1; i < height-1; i++)
+                    {
+                        int red = (input.GetRed(x,i));
+                        int green = (input.GetGreen(x,i));
+                        int blue = (input.GetBlue(x,i));
+                        
+                        if (red == 0 && green == 0 && blue == 0)
+                        {
+                            display.SetRGB(x, i, 255, 0, 0);
+                            break;
+                        }
+                        
+                    }
+                    
+                    // this scans upwards after hitting a boundary point
+                    for (int i = y-1; i >0; i--)
+                    {
+                        int red = (input.GetRed(x,i));
+                        int green = (input.GetGreen(x,i));
+                        int blue = (input.GetBlue(x,i));
+                        
+                        if (red == 0 && green == 0 && blue == 0)
+                        {
+                            display.SetRGB(x, i, 255, 0, 0);
+                            break;
+                        }
+                        
+                    }
+                    break;
+                }
+            }
         }
-		
-		// applying the changes to wxImage display based on the contour vector
-		for (int y = 0; y < height; y++)
-		{
-			for (int x = 0; x < width; x++)
-			{
-				if (vectContour[y][x] == 0)
-					display.SetRGB(x, y, 255, 0, 0);
-			}
-		}
-		
-		
-        // printing it onto bitmapOutput
+        // right to left
+        for (int y = height-1; y > 0; y--) 
+        {
+            for (int x = width-1; x > 0; x--)
+            {
+                int red = (input.GetRed(x,y));
+                int green = (input.GetGreen(x,y));
+                int blue = (input.GetBlue(x,y));
+                
+                if (red == 0 && green == 0 && blue == 0)
+                {
+                    display.SetRGB(x, y, 255, 0, 0);
+                    for (int i = y+1; i < height-1; i++)
+                    {
+                        int red = (input.GetRed(x,i));
+                        int green = (input.GetGreen(x,i));
+                        int blue = (input.GetBlue(x,i));
+                        
+                        if (red == 0 && green == 0 && blue == 0)
+                        {
+                            display.SetRGB(x, i, 255, 0, 0);
+                            break;
+                        }
+                        
+                    }
+                    
+                    // this scans upwards after hitting a boundary point
+                    for (int i = y-1; i >0; i--)
+                    {
+                        int red = (input.GetRed(x,i));
+                        int green = (input.GetGreen(x,i));
+                        int blue = (input.GetBlue(x,i));
+                        
+                        if (red == 0 && green == 0 && blue == 0)
+                        {
+                            display.SetRGB(x, i, 255, 0, 0);
+                            break;
+                        }
+                        
+                    }
+                    break;
+                }
+                   
+            }
+        }
+        
+        // bottom to top
+        for (int x = width-1; x > 0; x--) 
+        {
+            for (int y = height-1; y > 0; y--)
+            {
+                int red = (input.GetRed(x,y));
+                int green = (input.GetGreen(x,y));
+                int blue = (input.GetBlue(x,y));
+                
+                if (red == 0 && green == 0 && blue == 0)
+                {
+                    display.SetRGB(x, y, 255, 0, 0);
+                    
+                    // scans right after hitting boundary point
+                    for (int i = x+1; i < width-1; i++)
+                    {
+                        int red = (input.GetRed(i, y));
+                        int green = (input.GetGreen(i, y));
+                        int blue = (input.GetBlue(i, y));
+                        
+                        if (red == 0 && green == 0 && blue == 0)
+                        {
+                            display.SetRGB(i, y, 255, 0, 0);
+                            break;
+                        }
+                        
+                    }
+                    
+                    // scans left after hittign boundary point
+                    for (int i = x-1; i >0; i--)
+                    {
+                        int red = (input.GetRed(i, y));
+                        int green = (input.GetGreen(i, y));
+                        int blue = (input.GetBlue(i, y));
+                        
+                        if (red == 0 && green == 0 && blue == 0)
+                        {
+                            display.SetRGB(i, y, 255, 0, 0);
+                            break;
+                        }
+                        
+                    }
+                    break;
+                }
+                   
+            }
+        }
+        
+        // display
         if (300 >= (height*300/width))
-		{
-			bitmapOutput->SetBitmap(bg.Scale(300,height*300/width));
-			bitmapOutput->SetBitmap(display.Scale(300,height*300/width));
-		}
-		else
-		{
-			bitmapOutput->SetBitmap(bg.Scale(width*300/height,300));
-			bitmapOutput->SetBitmap(display.Scale(width*300/height,300));
-		}
-        
-        
+        {
+            bitmapOutput->SetBitmap(bg.Scale(300, height*300/width));
+            bitmapOutput->SetBitmap(display.Scale(300, height * 300 / width));
+        }
+        else
+        {
+            bitmapOutput->SetBitmap(bg.Scale(300*width/height, 300));
+            bitmapOutput->SetBitmap(display.Scale(width*300/height, 300));
+            
+        }
     }
     else
     {

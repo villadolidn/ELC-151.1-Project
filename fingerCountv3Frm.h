@@ -26,6 +26,7 @@
 //Header Include Start and Header Include End.
 //wxDev-C++ designer will remove them. Add custom headers after the block.
 ////Header Include Start
+#include <wx/statusbr.h>
 #include <wx/filedlg.h>
 #include <wx/stattext.h>
 #include <wx/button.h>
@@ -54,6 +55,7 @@ class fingerCountv3Frm : public wxFrame
 		//GUI Control Declaration Start and GUI Control Declaration End.
 		//wxDev-C++ will remove them. Add custom code after the block.
 		////GUI Control Declaration Start
+		wxStatusBar *WxStatusBar1;
 		wxFileDialog *dialogChooseImage;
 		wxStaticText *labelFingerCount;
 		wxButton *buttonObtainDefects;
@@ -71,6 +73,7 @@ class fingerCountv3Frm : public wxFrame
 		enum
 		{
 			////GUI Enum Control ID Start
+			ID_WXSTATUSBAR1 = 1007,
 			ID_LABELFINGERCOUNT = 1006,
 			ID_BUTTONOBTAINDEFECTS = 1005,
 			ID_BUTTONOBTAINMASK = 1004,
