@@ -35,6 +35,7 @@ BEGIN_EVENT_TABLE(fingerCountv3Frm,wxFrame)
 	////Manual Code End
 	
 	EVT_CLOSE(fingerCountv3Frm::OnClose)
+	EVT_BUTTON(ID_BUTTONSAVEIMAGE,fingerCountv3Frm::buttonSaveImageClick)
 	EVT_BUTTON(ID_BUTTONOBTAINDEFECTS,fingerCountv3Frm::buttonObtainDefectsClick)
 	EVT_BUTTON(ID_BUTTONOBTAINMASK,fingerCountv3Frm::buttonObtainMaskClick)
 	EVT_BUTTON(ID_BUTTONINSERTIMAGE,fingerCountv3Frm::buttonInsertImageClick)
@@ -61,26 +62,33 @@ void fingerCountv3Frm::CreateGUIControls()
 
 	wxInitAllImageHandlers();   //Initialize graphic format handlers
 
-	dialogChooseImage =  new wxFileDialog(this, _("Choose a file"), _(""), _(""), _("*.bmp*"), wxFD_OPEN);
-
-	labelFingerCount = new wxStaticText(this, ID_LABELFINGERCOUNT, _("Number of Fingers..."), wxPoint(640, 128), wxDefaultSize, 0, _("labelFingerCount"));
-
-	buttonObtainDefects = new wxButton(this, ID_BUTTONOBTAINDEFECTS, _("Count Fingers"), wxPoint(633, 79), wxSize(125, 28), 0, wxDefaultValidator, _("buttonObtainDefects"));
-
-	buttonObtainMask = new wxButton(this, ID_BUTTONOBTAINMASK, _("Obtain Mask"), wxPoint(632, 48), wxSize(125, 28), 0, wxDefaultValidator, _("buttonObtainMask"));
-
-	buttonInsertImage = new wxButton(this, ID_BUTTONINSERTIMAGE, _("Insert Image"), wxPoint(632, 16), wxSize(125, 28), 0, wxDefaultValidator, _("buttonInsertImage"));
-
-	bitmapOutput = new wxStaticBitmap(this, ID_BITMAPOUTPUT, wxNullBitmap, wxPoint(320, 16), wxSize(300, 300) );
-	bitmapOutput->SetToolTip(_("Output"));
-
 	bitmapInput = new wxStaticBitmap(this, ID_BITMAPINPUT, wxNullBitmap, wxPoint(8, 16), wxSize(300, 300) );
 	bitmapInput->SetToolTip(_("Input"));
 	bitmapInput->SetHelpText(_("Input"));
 
+	bitmapOutput = new wxStaticBitmap(this, ID_BITMAPOUTPUT, wxNullBitmap, wxPoint(320, 16), wxSize(300, 300) );
+	bitmapOutput->SetToolTip(_("Output"));
+
+	buttonInsertImage = new wxButton(this, ID_BUTTONINSERTIMAGE, _("Insert Image"), wxPoint(632, 16), wxSize(125, 28), 0, wxDefaultValidator, _("buttonInsertImage"));
+
+	buttonObtainMask = new wxButton(this, ID_BUTTONOBTAINMASK, _("Obtain Mask"), wxPoint(632, 48), wxSize(125, 28), 0, wxDefaultValidator, _("buttonObtainMask"));
+
+	buttonObtainDefects = new wxButton(this, ID_BUTTONOBTAINDEFECTS, _("Count Fingers"), wxPoint(633, 79), wxSize(125, 28), 0, wxDefaultValidator, _("buttonObtainDefects"));
+
+	labelFingerCount = new wxStaticText(this, ID_LABELFINGERCOUNT, _("Number of Fingers..."), wxPoint(640, 142), wxDefaultSize, 0, _("labelFingerCount"));
+
+	dialogChooseImage =  new wxFileDialog(this, _("Choose a file"), _(""), _(""), _("*.bmp*"), wxFD_OPEN);
+
+	WxStatusBar1 = new wxStatusBar(this, ID_WXSTATUSBAR1);
+
+	dialogSaveImage =  new wxFileDialog(this, _("Choose a file"), _(""), _(""), _("*.bmp*"), wxFD_SAVE);
+
+	buttonSaveImage = new wxButton(this, ID_BUTTONSAVEIMAGE, _("Save Image"), wxPoint(635, 111), wxSize(120, 25), 0, wxDefaultValidator, _("buttonSaveImage"));
+
+	SetStatusBar(WxStatusBar1);
 	SetTitle(_("Finger Counting"));
 	SetIcon(wxNullIcon);
-	SetSize(8,8,793,377);
+	SetSize(8,8,793,406);
 	Center();
 	
 	////GUI Items Creation End
@@ -93,58 +101,6 @@ void fingerCountv3Frm::OnClose(wxCloseEvent& event)
 /*****************************************
 FUNCTIONSSSSSSS
 *******************************************/
-void clockwise(int p_x, int p_y, int b_x, int b_y, int& c_x, int& c_y)
-{
-    int xDiff = p_x - b_x;
-    int yDiff = p_y - b_y;
-    
-    switch (xDiff)
-    {
-        case -1:
-            switch (yDiff)
-            {
-                case -1:
-                    c_x++;
-                    break;
-                case 0:
-                    c_y--;
-                    break;
-                case 1:
-                    c_y--;
-                    break;
-            }
-            break;
-        case 0:
-            switch (yDiff)
-            {
-                case -1:
-                    c_x++;
-                    break;
-                case 1:
-                    c_x--;
-                    break;
-            }
-            break;
-        case 1:
-            switch (yDiff)
-            {
-                case -1:
-                    c_y++;
-                    break;
-                case 0:
-                    c_y++;
-                    break;
-                case 1:
-                    c_x--;
-                    break;
-            }
-            break;
-        
-    }
-}
-
-
-
 
 
 
@@ -298,7 +254,7 @@ void fingerCountv3Frm::buttonObtainDefectsClick(wxCommandEvent& event)
             }
         }
         // right to left
-        for (int y = height-1; y > 0; y--) 
+        for (int y = 1; y < height-1; y++) 
         {
             for (int x = width-1; x > 0; x--)
             {
@@ -344,7 +300,7 @@ void fingerCountv3Frm::buttonObtainDefectsClick(wxCommandEvent& event)
         }
         
         // bottom to top
-        for (int x = width-1; x > 0; x--) 
+        for (int x = 1; x < width-1; x++) 
         {
             for (int y = height-1; y > 0; y--)
             {
@@ -416,4 +372,31 @@ void fingerCountv3Frm::buttonObtainDefectsClick(wxCommandEvent& event)
 void fingerCountv3Frm::buttonObtainMaskClick(wxCommandEvent& event)
 {
 	// insert your code here
+}
+
+/*
+ * buttonSaveImageClick
+ */
+void fingerCountv3Frm::buttonSaveImageClick(wxCommandEvent& event)
+{
+	if (openImageFlag)
+      {
+        wxString filename;
+        dialogSaveImage->SetFilename(filename);
+        
+        if (dialogSaveImage->ShowModal() == wxID_OK) // If the user clicked "OK"
+        {
+          wxInitAllImageHandlers();
+          wxString Path = dialogSaveImage->GetPath();
+          display.SaveFile(Path);
+        }
+        else
+        {
+          dialogSaveImage->Close(); 
+        }
+      }
+    else
+    {
+        wxMessageBox("No Image Selected :(",_T("Image"),wxOK | wxICON_EXCLAMATION, this);
+    }
 }
