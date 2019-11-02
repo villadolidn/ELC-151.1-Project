@@ -9,6 +9,10 @@
 ///------------------------------------------------------------------
 
 #include "fingerCountv3Frm.h"
+#include <iostream> 
+#include <vector>
+
+using namespace std;
 
 //Do not add custom headers between
 //Header Include Start and Header Include End
@@ -85,10 +89,10 @@ void fingerCountv3Frm::OnClose(wxCloseEvent& event)
 /*****************************************
 FUNCTIONSSSSSSS
 *******************************************/
-void nextClockwise(int x_b, int y_b, int &x, int &y, int x_p, int y_p)
+void clockwise(int p_x, int p_y, int b_x, int b_y, int& c_x, int& c_y)
 {
-    int xDiff = x_p - x_b;
-    int yDiff = y_p - y_b;
+    int xDiff = p_x - b_x;
+    int yDiff = p_y - b_y;
     
     switch (xDiff)
     {
@@ -96,13 +100,13 @@ void nextClockwise(int x_b, int y_b, int &x, int &y, int x_p, int y_p)
             switch (yDiff)
             {
                 case -1:
-                    x++;
+                    c_x++;
                     break;
                 case 0:
-                    y--;
+                    c_y--;
                     break;
                 case 1:
-                    y--;
+                    c_y--;
                     break;
             }
             break;
@@ -110,10 +114,10 @@ void nextClockwise(int x_b, int y_b, int &x, int &y, int x_p, int y_p)
             switch (yDiff)
             {
                 case -1:
-                    x++;
+                    c_x++;
                     break;
                 case 1:
-                    x--;
+                    c_x--;
                     break;
             }
             break;
@@ -121,20 +125,20 @@ void nextClockwise(int x_b, int y_b, int &x, int &y, int x_p, int y_p)
             switch (yDiff)
             {
                 case -1:
-                    y++;
+                    c_y++;
                     break;
                 case 0:
-                    y++;
+                    c_y++;
                     break;
                 case 1:
-                    x--;
+                    c_x--;
                     break;
             }
             break;
         
     }
-    
 }
+
 
 
 
@@ -192,106 +196,138 @@ void fingerCountv3Frm::buttonInsertImageClick(wxCommandEvent& event)
  */
 void fingerCountv3Frm::buttonObtainDefectsClick(wxCommandEvent& event)
 {
-    bool startSet = false;
-    bool gettingContour = true;
     if (openImageFlag)
     {
         int height = input.GetHeight();
         int width = input.GetWidth();
         
-        // necessary values for the contour
-        int x_s = 0;
-        int y_s = height-1;
-        int x_b = 0;
-        int y_b = height-1;
-        int x_p = 0;
-        int y_p = height-1;
-        int x = 0;
-        int y = height-1;
-        
-        
         display.Create(width, height);
         bg.Create(width, height);
+        vector< vector<int> > vectThreshold(height, vector<int>(width, 1)); // 1 = white, 0 = black
+        vector< vector<int> > vectContour(height, vector<int>(width, 1)); // 1 = white, 0 = red
         
-        // Moore's Neighboorhood
-        while (gettingContour)
+        
+        // storing the input pixel values in a vector
+		// note: y and x start at 1 in order to add a buffer
+        for (int y = 1; y < height; y++)
         {
-            // obtaining color values for a certain pixel
-            int red = (input.GetRed(x,y));
-            int green = (input.GetGreen(x,y));
-            int blue = (input.GetBlue(x,y));
-            wxImage::RGBValue rgbVal = wxImage::RGBValue(red, green, blue);
-            
-            if (red != 255 && green != 255 && blue != 255)
+			for (int x = 1; x < width; x++)
             {
-                if (!startSet)
-                {
-                    startSet = true; // remove flag
-                    
-                    x_s = x; // set starting pixel
-                    y_s = y;
-                    
-                    display.SetRGB(x_s, y_s, 255, 0, 0); // paint pixel red
-                    
-                    x_p = x_s;
-                    y_p = y_s;
-                    
-                    x_b = x_s-1;
-                    y_b = y_s;
-                    
-                    nextClockwise(x_b, y_b, x, y, x_p, y_p);
-                }
-                else
-                {
-                    display.SetRGB(x, y, 255, 0, 0);
-                    x_b = x_p;
-                    y_b = x_p;
-                    x_p = x;
-                    y_p = y;
-                    nextClockwise(x_b, y_b, x, y, x_p, y_p);
-                }
+				
+				int red = (input.GetRed(x,y));
+				int green = (input.GetGreen(x,y));
+				int blue = (input.GetBlue(x,y));
+				wxImage::RGBValue rgbVal = wxImage::RGBValue(red, green, blue);
+				
+				
+				if (red == 0 && green == 0 && blue == 0)
+				{
+					vectThreshold[y][x] = 0;  // black = 0
+				}
             }
-            else if (startSet)
-            {
-                x_b = x;
-                y_b = y;
-                nextClockwise(x_b, y_b, x, y, x_p, y_p);
-            }
-            
-            if (startSet && x_s == x && y_s == y)
-                gettingContour = false;
         }
+		
+		// prepping the display image by painting it white
+		for (int x = 0; x < width; x++) 
+		{
+			for (int y = 0; y < height; y++)
+				display.SetRGB(x, y, 255, 255, 255);
+		}
+		
         
-        // fills in the rest of the image with white
-        for (int x = 0; x < width; x++) 
-        {
-            for (int y = 0; y < height; y++)
-            {
-                int red = (input.GetRed(x,y));
-                int green = (input.GetGreen(x,y));
-                int blue = (input.GetBlue(x,y));
-                wxImage::RGBValue rgbVal = wxImage::RGBValue(red, green, blue);
-                if (red != 255 && green != 0 && blue != 0)
-                    display.SetRGB(x, y, 255, 255, 255);
+        /* 
+        Moore's Neighboorhood Algorithm
+		I.
+        1. Find the first boundary pixel s
+        2. Insert s in vectContour
+        3. Set p = s
+        4. Set b = pixe from which s was entered
+        5. clockwise(c)
+		II.
+        while c != s
+            if c = 0
+                insert c in vectContour
+                b = p
+                p = c
+                clockwise(c)
+            else
+                b = c
+                clockwise(c)
+        */
+		
+		int s_x, s_y, p_x, p_y, b_x, b_y, c_x, c_y;
+		
+		// I.
+		bool startingPixelFound = false;
+		for (int y = height - 1; y >=0; y--)
+		{
+			for (int x = 0; x < width; x++)
+			{
+				if (vectThreshold[y][x]== 0)
+				{
+					startingPixelFound = true;
+					s_x = x;
+					s_y = y;
+					vectContour[y][x] = 0;
+					p_x = s_x;
+					p_y = s_y;
+					b_x = s_x -1;
+					b_y = s_y;
+					clockwise(p_x, p_y, b_x, b_y, c_x, c_y);
+					break;
+				}
+			}
+			if (startingPixelFound)
+				break;
+		}
+		// II.
+		while (c_x != s_x && c_y != s_y)
+		{
+			if (vectThreshold[c_y][c_x]== 0)
+			{
+				vectContour[c_y][c_x] = 0;
+				b_x = p_x;
+				b_y = p_y;
+				p_x = c_x;
+				p_y = c_y;
+				clockwise(p_x, p_y, b_x, b_y, c_x, c_y);
+			}
+			else
+			{
+				b_x = c_x;
+				b_y = c_y;
+				clockwise(p_x, p_y, b_x, b_y, c_x, c_y);
+			}
         }
-        
-        // displays the image
+		
+		// applying the changes to wxImage display based on the contour vector
+		for (int y = 0; y < height; y++)
+		{
+			for (int x = 0; x < width; x++)
+			{
+				if (vectContour[y][x] == 0)
+					display.SetRGB(x, y, 255, 0, 0);
+			}
+		}
+		
+		
+        // printing it onto bitmapOutput
         if (300 >= (height*300/width))
-        {
-            bitmapOutput->SetBitmap(bg.Scale(300, height*300/width));
-            bitmapOutput->SetBitmap(display.Scale(300, height * 300 / width));
-        }
-        else
-        {
-            bitmapOutput->SetBitmap(bg.Scale(300*width/height, 300));
-            bitmapOutput->SetBitmap(display.Scale(width*300/height, 300));
-        }
-        }
+		{
+			bitmapOutput->SetBitmap(bg.Scale(300,height*300/width));
+			bitmapOutput->SetBitmap(display.Scale(300,height*300/width));
+		}
+		else
+		{
+			bitmapOutput->SetBitmap(bg.Scale(width*300/height,300));
+			bitmapOutput->SetBitmap(display.Scale(width*300/height,300));
+		}
         
-}
+        
+    }
     else
     {
-        wxMessageBox("Please load an image",_T("Image"),wxOK | wxICON_EXCLAMATION, this);
+        wxMessageBox("No Image Selected :(",_T("Image"),wxOK | wxICON_EXCLAMATION, this);
     }
 }
 
