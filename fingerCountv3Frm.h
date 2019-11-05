@@ -51,16 +51,19 @@ class fingerCountv3Frm : public wxFrame
 		void buttonObtainMaskClick(wxCommandEvent& event);
 		void buttonSaveImageClick(wxCommandEvent& event);
 		void buttonGetContourClick(wxCommandEvent& event);
+		void fingerCountv3FrmActivate(wxActivateEvent& event);
+		void buttonGetHullClick(wxCommandEvent& event);
 		
 	private:
 		//Do not add custom control declarations between
 		//GUI Control Declaration Start and GUI Control Declaration End.
 		//wxDev-C++ will remove them. Add custom code after the block.
 		////GUI Control Declaration Start
+		wxFileDialog *dialogSaveImage;
+		wxFileDialog *dialogChooseImage;
+		wxButton *buttonGetHull;
 		wxButton *buttonGetContour;
 		wxButton *buttonSaveImage;
-		wxFileDialog *dialogChooseImage;
-		wxFileDialog *dialogSaveImage;
 		wxStatusBar *WxStatusBar1;
 		wxStaticText *labelFingerCount;
 		wxButton *buttonObtainDefects;
@@ -78,6 +81,7 @@ class fingerCountv3Frm : public wxFrame
 		enum
 		{
 			////GUI Enum Control ID Start
+			ID_BUTTONGETHULL = 1011,
 			ID_BUTTONGETCONTOUR = 1010,
 			ID_BUTTONSAVEIMAGE = 1009,
 			ID_WXSTATUSBAR1 = 1007,

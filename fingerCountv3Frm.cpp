@@ -14,6 +14,7 @@
 #include <wx/log.h> 
 #include <wx/textfile.h>
 #include <sstream>
+#include <bits/stdc++.h> 
 
 using namespace std;
 
@@ -35,6 +36,7 @@ BEGIN_EVENT_TABLE(fingerCountv3Frm,wxFrame)
 	////Manual Code End
 	
 	EVT_CLOSE(fingerCountv3Frm::OnClose)
+	EVT_BUTTON(ID_BUTTONGETHULL,fingerCountv3Frm::buttonGetHullClick)
 	EVT_BUTTON(ID_BUTTONGETCONTOUR,fingerCountv3Frm::buttonGetContourClick)
 	EVT_BUTTON(ID_BUTTONSAVEIMAGE,fingerCountv3Frm::buttonSaveImageClick)
 	EVT_BUTTON(ID_BUTTONOBTAINDEFECTS,fingerCountv3Frm::buttonObtainDefectsClick)
@@ -74,19 +76,21 @@ void fingerCountv3Frm::CreateGUIControls()
 
 	buttonObtainMask = new wxButton(this, ID_BUTTONOBTAINMASK, _("Obtain Mask"), wxPoint(632, 48), wxSize(125, 28), 0, wxDefaultValidator, _("buttonObtainMask"));
 
-	buttonObtainDefects = new wxButton(this, ID_BUTTONOBTAINDEFECTS, _("Count Fingers"), wxPoint(635, 115), wxSize(125, 28), 0, wxDefaultValidator, _("buttonObtainDefects"));
+	buttonObtainDefects = new wxButton(this, ID_BUTTONOBTAINDEFECTS, _("Count Fingers"), wxPoint(632, 144), wxSize(125, 28), 0, wxDefaultValidator, _("buttonObtainDefects"));
 
-	labelFingerCount = new wxStaticText(this, ID_LABELFINGERCOUNT, _("Number of Fingers..."), wxPoint(640, 179), wxDefaultSize, 0, _("labelFingerCount"));
+	labelFingerCount = new wxStaticText(this, ID_LABELFINGERCOUNT, _("Number of Fingers..."), wxPoint(640, 208), wxDefaultSize, 0, _("labelFingerCount"));
 
 	WxStatusBar1 = new wxStatusBar(this, ID_WXSTATUSBAR1);
 
-	dialogSaveImage =  new wxFileDialog(this, _("Choose a file"), _(""), _(""), _("*.bmp*"), wxFD_SAVE);
+	buttonSaveImage = new wxButton(this, ID_BUTTONSAVEIMAGE, _("Save Image"), wxPoint(632, 176), wxSize(125, 28), 0, wxDefaultValidator, _("buttonSaveImage"));
+
+	buttonGetContour = new wxButton(this, ID_BUTTONGETCONTOUR, _("Get Contour"), wxPoint(632, 76), wxSize(125, 28), 0, wxDefaultValidator, _("buttonGetContour"));
+
+	buttonGetHull = new wxButton(this, ID_BUTTONGETHULL, _("Get Hull"), wxPoint(632, 112), wxSize(125, 28), 0, wxDefaultValidator, _("buttonGetHull"));
 
 	dialogChooseImage =  new wxFileDialog(this, _("Choose a file"), _(""), _(""), _("*.bmp*"), wxFD_OPEN);
 
-	buttonSaveImage = new wxButton(this, ID_BUTTONSAVEIMAGE, _("Save Image"), wxPoint(635, 148), wxSize(120, 25), 0, wxDefaultValidator, _("buttonSaveImage"));
-
-	buttonGetContour = new wxButton(this, ID_BUTTONGETCONTOUR, _("Get Contour"), wxPoint(636, 86), wxSize(119, 25), 0, wxDefaultValidator, _("buttonGetContour"));
+	dialogSaveImage =  new wxFileDialog(this, _("Choose a file"), _(""), _(""), _("*.bmp*"), wxFD_SAVE);
 
 	SetStatusBar(WxStatusBar1);
 	SetTitle(_("Finger Counting"));
@@ -105,6 +109,15 @@ void fingerCountv3Frm::OnClose(wxCloseEvent& event)
 FUNCTIONSSSSSSS
 *******************************************/
 
+int orientation(int p_x, int p_y, int q_x, int q_y, int r_x, int r_y)
+{ 
+    int val = (q_y - p_y) * (r_x - q_x) - 
+              (q_x - p_x) * (r_y - q_y); 
+  
+    if (val == 0) return 0;  // colinear 
+    return (val > 0)? 1: 2; // clock or counterclock wise 
+} 
+
 
 
 /*****************************************
@@ -116,7 +129,10 @@ EVENTS
  */
  
 wxImage input;
+wxImage maskBMP;
 wxImage contourBMP;
+wxImage convexBMP;
+wxImage defectsBMP;
 wxImage bg;
 
 bool openImageFlag = false;
@@ -154,14 +170,6 @@ void fingerCountv3Frm::buttonInsertImageClick(wxCommandEvent& event)
 void fingerCountv3Frm::buttonObtainDefectsClick(wxCommandEvent& event)
 {
     
-}
-
-/*
- * buttonObtainMaskClick
- */
-void fingerCountv3Frm::buttonObtainMaskClick(wxCommandEvent& event)
-{
-	// insert your code here
 }
 
 /*
@@ -205,6 +213,7 @@ void fingerCountv3Frm::buttonGetContourClick(wxCommandEvent& event)
         bg.Create(width, height);
         contourBMP.Clear(255);
         bg.Clear(255);
+        
         
         // top to bottom
         for (int x = 1; x < width-1; x++) 
@@ -521,6 +530,108 @@ void fingerCountv3Frm::buttonGetContourClick(wxCommandEvent& event)
     }
     else
     {
-        wxMessageBox("No Image Selected :(",_T("Image"),wxOK | wxICON_EXCLAMATION, this);
+        wxMessageBox
+        ("No Image Selected :(",_T("Image"),wxOK | wxICON_EXCLAMATION, this);
     }
+}
+
+/*
+ * fingerCountv3FrmActivate
+ */
+void fingerCountv3Frm::fingerCountv3FrmActivate(wxActivateEvent& event)
+{
+	// insert your code here
+}
+
+/*
+ * buttonGetHullClick
+ */
+void fingerCountv3Frm::buttonGetHullClick(wxCommandEvent& event)
+{
+	int height = contourBMP.GetHeight();
+    int width = contourBMP.GetWidth();
+    
+    convexBMP.Create(width, height);
+    bg.Create(width, height);
+    convexBMP.Clear(255);
+    bg.Clear(255);
+    
+    // obtain all the points from the contour
+    vector<int> contourPoints_x;
+    vector<int> contourPoints_y;
+    
+    for (int y = 0; y < height; y++)
+    {
+        for (int x = 0; x < width; x++)
+        {
+            int red = (input.GetRed(x, y));
+            int green = (input.GetGreen(x, y));
+            int blue = (input.GetBlue(x, y));
+            if (!(red == 255 && green == 255 && blue == 255))
+            {
+                contourPoints_x.push_back(x);
+                contourPoints_y.push_back(y);
+            }
+        }
+    }
+    
+    vector<int> convexPoints_x;
+    vector<int> convexPoints_y;
+    
+    //Jarvis' Algorithm
+        
+    // Obtain leftmost point
+    int l = 0;
+    for (int i = 1; i < contourPoints_x.size(); i++)
+        if (contourPoints_x[i] < contourPoints_x[l]) 
+            l = i;
+    
+    int p = l, index = 0;
+    int q;
+    do
+    {
+        convexPoints_x.push_back(contourPoints_x[index]);
+        convexPoints_y.push_back(contourPoints_y[index]);
+        index +=1;
+        q = (p+1)%contourPoints_x.size();
+        for (int i = 0; i < contourPoints_x.size(); i++)
+        {
+            if (orientation(contourPoints_x[p], contourPoints_y[p], 
+            contourPoints_x[i], contourPoints_y[i], contourPoints_x[q], 
+            contourPoints_y[q])==2)
+                q = i;
+        }
+        
+        p = q;
+    } while (p!=l);
+    
+    // use the points obtained from the algorithm to draw the convex hull
+    
+    int x = 0, y = 0;
+    
+    for (int i = 0; i < contourPoints_x.size(); i++)
+    {
+        x = convexPoints_x[i];
+        y = convexPoints_y[i];
+        //shitty exception handler
+        if (x < 0 || x > width || y < 0 || y > height)
+            continue;
+        convexBMP.SetRGB(x, y, 0, 0, 255);
+    }    
+    // display onto static bitmap
+        
+    if (300 >= (height*300/width))
+    {
+        bitmapOutput->SetBitmap(bg.Scale(300, height*300/width));
+        bitmapOutput->SetBitmap(convexBMP.Scale(300, height * 300 / width));
+    }
+    else
+    {
+        bitmapOutput->SetBitmap(bg.Scale(300*width/height, 300));
+        bitmapOutput->SetBitmap(convexBMP.Scale(width*300/height, 300));
+    }
+}
+void fingerCountv3Frm::buttonObtainMaskClick(wxCommandEvent& event)
+{
+    
 }
