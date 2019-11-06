@@ -186,7 +186,7 @@ void fingerCountv3Frm::buttonSaveImageClick(wxCommandEvent& event)
         {
           wxInitAllImageHandlers();
           wxString Path = dialogSaveImage->GetPath();
-          contourBMP.SaveFile(Path);
+          convexBMP.SaveFile(Path);
         }
         else
         {
@@ -548,87 +548,97 @@ void fingerCountv3Frm::fingerCountv3FrmActivate(wxActivateEvent& event)
  */
 void fingerCountv3Frm::buttonGetHullClick(wxCommandEvent& event)
 {
-	int height = contourBMP.GetHeight();
-    int width = contourBMP.GetWidth();
-    
-    convexBMP.Create(width, height);
-    bg.Create(width, height);
-    convexBMP.Clear(255);
-    bg.Clear(255);
-    
-    // obtain all the points from the contour
-    vector<int> contourPoints_x;
-    vector<int> contourPoints_y;
-    
-    for (int y = 0; y < height; y++)
+    if (openImageFlag)
     {
-        for (int x = 0; x < width; x++)
+    	int height = input.GetHeight();
+        int width = input.GetWidth();
+        
+        convexBMP.Create(width, height);
+        bg.Create(width, height);
+        convexBMP.Clear(255);
+        bg.Clear(255);
+        
+        // obtain all the points from the contour
+        
+        vector<int> contourPoints_x;
+        vector<int> contourPoints_y;
+        int smallest_x = width+1;
+        for (int y = 0; y < height; y++)
         {
-            int red = (input.GetRed(x, y));
-            int green = (input.GetGreen(x, y));
-            int blue = (input.GetBlue(x, y));
-            if (!(red == 255 && green == 255 && blue == 255))
+            for (int x = 0; x < width; x++)
             {
-                contourPoints_x.push_back(x);
-                contourPoints_y.push_back(y);
+                int red = (contourBMP.GetRed(x, y));
+                int green = (contourBMP.GetGreen(x, y));
+                int blue = (contourBMP.GetBlue(x, y));
+                if (red==255 && green == 0 && blue == 0)
+                {
+                    if (x < smallest_x)
+                        smallest_x = x;
+                    contourPoints_x.push_back(x);
+                    contourPoints_y.push_back(y);
+                    convexBMP.SetRGB(x, y, 255, 0, 255);
+                }
             }
         }
-    }
-    
-    vector<int> convexPoints_x;
-    vector<int> convexPoints_y;
-    
-    //Jarvis' Algorithm
         
-    // Obtain leftmost point
-    int l = 0;
-    for (int i = 1; i < contourPoints_x.size(); i++)
-        if (contourPoints_x[i] < contourPoints_x[l]) 
-            l = i;
-    
-    int p = l, index = 0;
-    int q;
-    do
-    {
-        convexPoints_x.push_back(contourPoints_x[index]);
-        convexPoints_y.push_back(contourPoints_y[index]);
-        index +=1;
-        q = (p+1)%contourPoints_x.size();
+        vector<int> convexPoints_x;
+        vector<int> convexPoints_y;
+        
+        //Jarvis' Algorithm
+            
+        // Obtain leftmost point
+        int l = smallest_x;
+        //wxLogStatus("leftmost point coordinate = " + (char)l);
+        
+        int p = l, index = 0;
+        int q;
+        do
+        {
+            convexPoints_x.push_back(contourPoints_x[p]);
+            convexPoints_y.push_back(contourPoints_y[p]);
+            index +=1;
+            q = (p+1)%contourPoints_x.size();
+            for (int i = 0; i < contourPoints_x.size(); i++)
+            {
+                if (orientation(contourPoints_x[p], contourPoints_y[p], 
+                contourPoints_x[i], contourPoints_y[i], contourPoints_x[q], 
+                contourPoints_y[q])==2)
+                    q = i;
+            }
+            
+            p = q;
+        } while (p!=l);
+        
+        // use the points obtained from the algorithm to draw the convex hull
+        
+        int x = 0, y = 0;
+        
         for (int i = 0; i < contourPoints_x.size(); i++)
         {
-            if (orientation(contourPoints_x[p], contourPoints_y[p], 
-            contourPoints_x[i], contourPoints_y[i], contourPoints_x[q], 
-            contourPoints_y[q])==2)
-                q = i;
+            x = convexPoints_x[i];
+            y = convexPoints_y[i];
+            //shitty exception handler
+            if (x < 0 || x > width || y < 0 || y > height)
+                continue;
+            convexBMP.SetRGB(x, y, 0, 0, 255);
+        }    
+        // display onto static bitmap
+        
+        if (300 >= (height*300/width))
+        {
+            bitmapOutput->SetBitmap(bg.Scale(300, height*300/width));
+            bitmapOutput->SetBitmap(convexBMP.Scale(300, height * 300 / width));
         }
-        
-        p = q;
-    } while (p!=l);
-    
-    // use the points obtained from the algorithm to draw the convex hull
-    
-    int x = 0, y = 0;
-    
-    for (int i = 0; i < contourPoints_x.size(); i++)
-    {
-        x = convexPoints_x[i];
-        y = convexPoints_y[i];
-        //shitty exception handler
-        if (x < 0 || x > width || y < 0 || y > height)
-            continue;
-        convexBMP.SetRGB(x, y, 0, 0, 255);
-    }    
-    // display onto static bitmap
-        
-    if (300 >= (height*300/width))
-    {
-        bitmapOutput->SetBitmap(bg.Scale(300, height*300/width));
-        bitmapOutput->SetBitmap(convexBMP.Scale(300, height * 300 / width));
+        else
+        {
+            bitmapOutput->SetBitmap(bg.Scale(300*width/height, 300));
+            bitmapOutput->SetBitmap(convexBMP.Scale(width*300/height, 300));
+        }
     }
     else
     {
-        bitmapOutput->SetBitmap(bg.Scale(300*width/height, 300));
-        bitmapOutput->SetBitmap(convexBMP.Scale(width*300/height, 300));
+         wxMessageBox
+        ("No Image Selected :(",_T("Image"),wxOK | wxICON_EXCLAMATION, this);
     }
 }
 void fingerCountv3Frm::buttonObtainMaskClick(wxCommandEvent& event)
