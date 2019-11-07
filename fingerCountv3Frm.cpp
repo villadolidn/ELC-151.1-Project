@@ -560,8 +560,8 @@ void fingerCountv3Frm::buttonGetHullClick(wxCommandEvent& event)
         
         // obtain all the points from the contour
         
-        vector<int> contourPoints_x;
-        vector<int> contourPoints_y;
+        vector<int> contour_x;
+        vector<int> contour_y;
         int smallest_x = width+1;
         for (int y = 0; y < height; y++)
         {
@@ -574,15 +574,15 @@ void fingerCountv3Frm::buttonGetHullClick(wxCommandEvent& event)
                 {
                     if (x < smallest_x)
                         smallest_x = x;
-                    contourPoints_x.push_back(x);
-                    contourPoints_y.push_back(y);
+                    contour_x.push_back(x);
+                    contour_y.push_back(y);
                     convexBMP.SetRGB(x, y, 255, 0, 255);
                 }
             }
         }
         
-        vector<int> convexPoints_x;
-        vector<int> convexPoints_y;
+        vector<int> convex_x;
+        vector<int> convex_y;
         
         //Jarvis' Algorithm
             
@@ -594,15 +594,15 @@ void fingerCountv3Frm::buttonGetHullClick(wxCommandEvent& event)
         int q;
         do
         {
-            convexPoints_x.push_back(contourPoints_x[p]);
-            convexPoints_y.push_back(contourPoints_y[p]);
+            convex_x.push_back(contour_x[p]);
+            convex_y.push_back(contour_y[p]);
             index +=1;
-            q = (p+1)%contourPoints_x.size();
-            for (int i = 0; i < contourPoints_x.size(); i++)
+            q = (p+1)%contour_x.size();
+            for (int i = 0; i < contour_x.size(); i++)
             {
-                if (orientation(contourPoints_x[p], contourPoints_y[p], 
-                contourPoints_x[i], contourPoints_y[i], contourPoints_x[q], 
-                contourPoints_y[q])==2)
+                if (orientation(contour_x[p], contour_y[p], 
+                contour_x[i], contour_y[i], contour_x[q], 
+                contour_y[q])==2)
                     q = i;
             }
             
@@ -613,10 +613,10 @@ void fingerCountv3Frm::buttonGetHullClick(wxCommandEvent& event)
         
         int x = 0, y = 0;
         
-        for (int i = 0; i < contourPoints_x.size(); i++)
+        for (int i = 0; i < contour_x.size(); i++)
         {
-            x = convexPoints_x[i];
-            y = convexPoints_y[i];
+            x = convex_x[i];
+            y = convex_y[i];
             //shitty exception handler
             if (x < 0 || x > width || y < 0 || y > height)
                 continue;
@@ -641,6 +641,7 @@ void fingerCountv3Frm::buttonGetHullClick(wxCommandEvent& event)
         ("No Image Selected :(",_T("Image"),wxOK | wxICON_EXCLAMATION, this);
     }
 }
+
 void fingerCountv3Frm::buttonObtainMaskClick(wxCommandEvent& event)
 {
     
