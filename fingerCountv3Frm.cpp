@@ -115,7 +115,7 @@ int orientation(int p_x, int p_y, int q_x, int q_y, int r_x, int r_y)
               (q_x - p_x) * (r_y - q_y); 
   
     if (val == 0) return 0;  // colinear 
-    return (val > 0)? 1: 2; // clock or counterclock wise 
+    return (val > 0)? 2: 1; // clock or counterclock wise 
 } 
 
 
@@ -562,65 +562,213 @@ void fingerCountv3Frm::buttonGetHullClick(wxCommandEvent& event)
         
         vector<int> contour_x;
         vector<int> contour_y;
-        int smallest_x = width+1;
-        for (int y = 0; y < height; y++)
+        int smol_x = width+1;
+        int smol_x_element;
+        for (int y = 1; y < height-1; y++)
         {
-            for (int x = 0; x < width; x++)
+            for (int x = 1; x < width-1; x++)
             {
                 int red = (contourBMP.GetRed(x, y));
                 int green = (contourBMP.GetGreen(x, y));
                 int blue = (contourBMP.GetBlue(x, y));
                 if (red==255 && green == 0 && blue == 0)
                 {
-                    if (x < smallest_x)
-                        smallest_x = x;
+                    if (x < smol_x)
+                    {
+                        smol_x = x;
+                        smol_x_element = contour_x.size();
+                    }
                     contour_x.push_back(x);
                     contour_y.push_back(y);
                     convexBMP.SetRGB(x, y, 255, 0, 255);
                 }
             }
         }
+        convexBMP.SetRGB(smol_x, contour_y[smol_x_element], 0, 255, 255);
+        
+        
+        wxString debug1 = wxString::Format(wxT("%i"), smol_x);
+        wxMessageBox(debug1);
+        
+        wxString debug4 = wxString::Format(wxT("%i"), contour_x[smol_x_element]);
+        wxMessageBox(debug4);
+        
+        int n = contour_x.size();
         
         vector<int> convex_x;
         vector<int> convex_y;
         
         //Jarvis' Algorithm
             
-        // Obtain leftmost point
-        int l = smallest_x;
-        //wxLogStatus("leftmost point coordinate = " + (char)l);
+        // Obtain element containing the leftmost point
+        int l = smol_x_element;
+        wxString debug2 = wxString::Format(wxT("%i"), l);
+        wxMessageBox(debug2);
         
-        int p = l, index = 0;
+        wxString debug3 = wxString::Format(wxT("%i"), contour_x[l]);
+        wxMessageBox(debug3);
+        
+        int p = l;
         int q;
+        int min_x = 30, min_y = 30, max_x = width-30, max_y = height;
+        bool skipFlag = false;
         do
         {
-            convex_x.push_back(contour_x[p]);
-            convex_y.push_back(contour_y[p]);
-            index +=1;
-            q = (p+1)%contour_x.size();
-            for (int i = 0; i < contour_x.size(); i++)
+            if (contour_x[p] < min_x || contour_x[p] > max_x || 
+                contour_y[p] < min_y || contour_y[p] > max_y)
+                skipFlag = true;
+            if (!skipFlag)
             {
-                if (orientation(contour_x[p], contour_y[p], 
-                contour_x[i], contour_y[i], contour_x[q], 
-                contour_y[q])==2)
+                convex_x.push_back(contour_x[p]);
+                convex_y.push_back(contour_y[p]);
+            }
+            q = (p+1)%n;
+            for (int i = 0; i < n; i++)
+            {
+                if (orientation(contour_x[p], contour_y[p], contour_x[i], 
+                contour_y[i], contour_x[q], contour_y[q])==2)
+                {
                     q = i;
+                }
             }
             
             p = q;
+            skipFlag = false;
         } while (p!=l);
+        wxMessageBox
+        ("Mishon compree",_T("Image"),wxOK | wxICON_EXCLAMATION, this);
         
         // use the points obtained from the algorithm to draw the convex hull
         
-        int x = 0, y = 0;
+        int x = 0, y = 0, x2 = 0, y2 = 0;
         
-        for (int i = 0; i < contour_x.size(); i++)
+        for (int i = 1; i < contour_x.size(); i++)
         {
-            x = convex_x[i];
-            y = convex_y[i];
             //shitty exception handler
             if (x < 0 || x > width || y < 0 || y > height)
                 continue;
-            convexBMP.SetRGB(x, y, 0, 0, 255);
+            // variables
+            x = convex_x[i-1];
+            y = convex_y[i-1];
+            x2 = convex_x[i];
+            y2 = convex_y[i];
+            int rise = y - y2;
+            int run = x2 - x;
+            if (rise > 0 && run > 0)// decrease y, increase x done
+            {
+                while(y2 < y)
+                {
+                    if (x < 0 || x > width || y < 0 || y > height)
+                        continue;
+                    convexBMP.SetRGB(x, y, 0, 0, 255);
+                    y--;
+                }
+                y+=1;
+                while (x2 > x)
+                {
+                    if (x < 0 || x > width || y < 0 || y > height)
+                        continue;
+                    convexBMP.SetRGB(x, y, 0, 0, 255);
+                    x++;
+                }
+                    
+            }
+            else if (rise > 0 && run < 0) // decrease y, decrease x done
+            {
+                while(y2 < y)
+                {
+                    if (x < 0 || x > width || y < 0 || y > height)
+                        continue;
+                    convexBMP.SetRGB(x, y, 0, 0, 255);
+                    y--;
+                }
+                y+=1;
+                while (x2 < x)
+                {
+                    if (x < 0 || x > width || y < 0 || y > height)
+                        continue;
+                    convexBMP.SetRGB(x, y, 0, 0, 255);
+                    x--;
+                }
+            }
+            else if (rise < 0 && run > 0) // increase y, increase x done
+            {
+                while(y2 > y)
+                {
+                    if (x < 0 || x > width || y < 0 || y > height)
+                        continue;
+                    convexBMP.SetRGB(x, y, 0, 0, 255);
+                    y++;
+                }
+                y-=1;
+                while (x2 > x)
+                {
+                    if (x < 0 || x > width || y < 0 || y > height)
+                        continue;
+                    convexBMP.SetRGB(x, y, 0, 0, 255);
+                    x++;
+                }
+            }
+            else if (rise < 0 && run < 0) // increase y, dec x done
+            {
+                while(y2 > y)
+                {
+                    if (x < 0 || x > width || y < 0 || y > height)
+                        continue;
+                    convexBMP.SetRGB(x, y, 0, 0, 255);
+                    y++;
+                }
+                y-=1;
+                while (x2 < x)
+                {
+                    if (x < 0 || x > width || y < 0 || y > height)
+                        continue;
+                    convexBMP.SetRGB(x, y, 0, 0, 255);
+                    x--;
+                }
+            }
+            else if (rise == 0 && run > 0) // only increase x
+            {
+                while (x2 > x)
+                {
+                    if (x < 0 || x > width || y < 0 || y > height)
+                        continue;
+                    convexBMP.SetRGB(x, y, 0, 0, 255);
+                    x++;
+                }
+            }
+            else if (rise == 0 && run < 0) // only dec x
+            {
+                while (x2 < x)
+                {
+                    if (x < 0 || x > width || y < 0 || y > height)
+                        continue;
+                    convexBMP.SetRGB(x, y, 0, 0, 255);
+                    x--;
+                }
+            }
+            else if (rise < 0 && run == 0) // only increase y
+            {
+                while(y2 > y)
+                {
+                    if (x < 0 || x > width || y < 0 || y > height)
+                        continue;
+                    convexBMP.SetRGB(x, y, 0, 0, 255);
+                    y++;
+                }
+            }
+            else if (rise > 0 && run == 0) // only dec y
+            {
+                while(y2 < y)
+                {
+                    if (x < 0 || x > width || y < 0 || y > height)
+                        continue;
+                    convexBMP.SetRGB(x, y, 0, 0, 255);
+                    y--;
+                }
+            }
+            else
+                continue;
         }    
         // display onto static bitmap
         
@@ -634,6 +782,7 @@ void fingerCountv3Frm::buttonGetHullClick(wxCommandEvent& event)
             bitmapOutput->SetBitmap(bg.Scale(300*width/height, 300));
             bitmapOutput->SetBitmap(convexBMP.Scale(width*300/height, 300));
         }
+        
     }
     else
     {
