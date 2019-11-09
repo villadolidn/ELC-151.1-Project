@@ -562,8 +562,10 @@ void fingerCountv3Frm::buttonGetHullClick(wxCommandEvent& event)
         
         vector<int> contour_x;
         vector<int> contour_y;
-        int smol_x = width+1;
-        int smol_x_element;
+        int smol_x = width+1, chunky_x = 0;
+        int smol_x_element, chunky_x_element;
+        int smol_y = height+1, chunky_y = 0;
+        int smol_y_element, chunky_y_element;
         for (int y = 1; y < height-1; y++)
         {
             for (int x = 1; x < width-1; x++)
@@ -578,199 +580,44 @@ void fingerCountv3Frm::buttonGetHullClick(wxCommandEvent& event)
                         smol_x = x;
                         smol_x_element = contour_x.size();
                     }
+                    else if (x > chunky_x)
+                    {
+                        chunky_x = x;
+                        chunky_x_element = contour_x.size();
+                    }
+                    if (y < smol_y)
+                    {
+                        smol_y = y;
+                        smol_y_element = contour_y.size();
+                    }
+                    else if (y > chunky_y)
+                    {
+                        chunky_y = y;
+                        chunky_y_element = contour_y.size();
+                    }
                     contour_x.push_back(x);
                     contour_y.push_back(y);
                     convexBMP.SetRGB(x, y, 255, 0, 255);
                 }
             }
         }
-        convexBMP.SetRGB(smol_x, contour_y[smol_x_element], 0, 255, 255);
         
+        // left line
+        for (int y = smol_y; y <= chunky_y; y++)
+            convexBMP.SetRGB(smol_x, y, 0, 0, 255);
         
-        wxString debug1 = wxString::Format(wxT("%i"), smol_x);
-        wxMessageBox(debug1);
+        // top line
+        for (int x = smol_x; x <= chunky_x; x++)
+            convexBMP.SetRGB(x, smol_y, 0, 0, 255);
         
-        wxString debug4 = wxString::Format(wxT("%i"), contour_x[smol_x_element]);
-        wxMessageBox(debug4);
+        // right line
+        for (int y = smol_y; y <= chunky_y; y++)
+            convexBMP.SetRGB(chunky_x, y, 0, 0, 255);
         
-        int n = contour_x.size();
+        // bottom line
+        for (int x = smol_x; x <= chunky_x; x++)
+            convexBMP.SetRGB(x, chunky_y, 0, 0, 255);
         
-        vector<int> convex_x;
-        vector<int> convex_y;
-        
-        //Jarvis' Algorithm
-            
-        // Obtain element containing the leftmost point
-        int l = smol_x_element;
-        wxString debug2 = wxString::Format(wxT("%i"), l);
-        wxMessageBox(debug2);
-        
-        wxString debug3 = wxString::Format(wxT("%i"), contour_x[l]);
-        wxMessageBox(debug3);
-        
-        int p = l;
-        int q;
-        int min_x = 30, min_y = 30, max_x = width-30, max_y = height;
-        bool skipFlag = false;
-        do
-        {
-            if (contour_x[p] < min_x || contour_x[p] > max_x || 
-                contour_y[p] < min_y || contour_y[p] > max_y)
-                skipFlag = true;
-            if (!skipFlag)
-            {
-                convex_x.push_back(contour_x[p]);
-                convex_y.push_back(contour_y[p]);
-            }
-            q = (p+1)%n;
-            for (int i = 0; i < n; i++)
-            {
-                if (orientation(contour_x[p], contour_y[p], contour_x[i], 
-                contour_y[i], contour_x[q], contour_y[q])==2)
-                {
-                    q = i;
-                }
-            }
-            
-            p = q;
-            skipFlag = false;
-        } while (p!=l);
-        wxMessageBox
-        ("Mishon compree",_T("Image"),wxOK | wxICON_EXCLAMATION, this);
-        
-        // use the points obtained from the algorithm to draw the convex hull
-        
-        int x = 0, y = 0, x2 = 0, y2 = 0;
-        
-        for (int i = 1; i < contour_x.size(); i++)
-        {
-            //shitty exception handler
-            if (x < 0 || x > width || y < 0 || y > height)
-                continue;
-            // variables
-            x = convex_x[i-1];
-            y = convex_y[i-1];
-            x2 = convex_x[i];
-            y2 = convex_y[i];
-            int rise = y - y2;
-            int run = x2 - x;
-            if (rise > 0 && run > 0)// decrease y, increase x done
-            {
-                while(y2 < y)
-                {
-                    if (x < 0 || x > width || y < 0 || y > height)
-                        continue;
-                    convexBMP.SetRGB(x, y, 0, 0, 255);
-                    y--;
-                }
-                y+=1;
-                while (x2 > x)
-                {
-                    if (x < 0 || x > width || y < 0 || y > height)
-                        continue;
-                    convexBMP.SetRGB(x, y, 0, 0, 255);
-                    x++;
-                }
-                    
-            }
-            else if (rise > 0 && run < 0) // decrease y, decrease x done
-            {
-                while(y2 < y)
-                {
-                    if (x < 0 || x > width || y < 0 || y > height)
-                        continue;
-                    convexBMP.SetRGB(x, y, 0, 0, 255);
-                    y--;
-                }
-                y+=1;
-                while (x2 < x)
-                {
-                    if (x < 0 || x > width || y < 0 || y > height)
-                        continue;
-                    convexBMP.SetRGB(x, y, 0, 0, 255);
-                    x--;
-                }
-            }
-            else if (rise < 0 && run > 0) // increase y, increase x done
-            {
-                while(y2 > y)
-                {
-                    if (x < 0 || x > width || y < 0 || y > height)
-                        continue;
-                    convexBMP.SetRGB(x, y, 0, 0, 255);
-                    y++;
-                }
-                y-=1;
-                while (x2 > x)
-                {
-                    if (x < 0 || x > width || y < 0 || y > height)
-                        continue;
-                    convexBMP.SetRGB(x, y, 0, 0, 255);
-                    x++;
-                }
-            }
-            else if (rise < 0 && run < 0) // increase y, dec x done
-            {
-                while(y2 > y)
-                {
-                    if (x < 0 || x > width || y < 0 || y > height)
-                        continue;
-                    convexBMP.SetRGB(x, y, 0, 0, 255);
-                    y++;
-                }
-                y-=1;
-                while (x2 < x)
-                {
-                    if (x < 0 || x > width || y < 0 || y > height)
-                        continue;
-                    convexBMP.SetRGB(x, y, 0, 0, 255);
-                    x--;
-                }
-            }
-            else if (rise == 0 && run > 0) // only increase x
-            {
-                while (x2 > x)
-                {
-                    if (x < 0 || x > width || y < 0 || y > height)
-                        continue;
-                    convexBMP.SetRGB(x, y, 0, 0, 255);
-                    x++;
-                }
-            }
-            else if (rise == 0 && run < 0) // only dec x
-            {
-                while (x2 < x)
-                {
-                    if (x < 0 || x > width || y < 0 || y > height)
-                        continue;
-                    convexBMP.SetRGB(x, y, 0, 0, 255);
-                    x--;
-                }
-            }
-            else if (rise < 0 && run == 0) // only increase y
-            {
-                while(y2 > y)
-                {
-                    if (x < 0 || x > width || y < 0 || y > height)
-                        continue;
-                    convexBMP.SetRGB(x, y, 0, 0, 255);
-                    y++;
-                }
-            }
-            else if (rise > 0 && run == 0) // only dec y
-            {
-                while(y2 < y)
-                {
-                    if (x < 0 || x > width || y < 0 || y > height)
-                        continue;
-                    convexBMP.SetRGB(x, y, 0, 0, 255);
-                    y--;
-                }
-            }
-            else
-                continue;
-        }    
-        // display onto static bitmap
         
         if (300 >= (height*300/width))
         {
@@ -784,6 +631,7 @@ void fingerCountv3Frm::buttonGetHullClick(wxCommandEvent& event)
         }
         
     }
+
     else
     {
          wxMessageBox
