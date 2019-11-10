@@ -601,7 +601,7 @@ void fingerCountv3Frm::buttonGetHullClick(wxCommandEvent& event)
                 }
             }
         }
-        
+        /*******************convex hull****************************************
         // left line
         for (int y = smol_y; y <= chunky_y; y++)
             convexBMP.SetRGB(smol_x, y, 0, 0, 255);
@@ -617,7 +617,122 @@ void fingerCountv3Frm::buttonGetHullClick(wxCommandEvent& event)
         // bottom line
         for (int x = smol_x; x <= chunky_x; x++)
             convexBMP.SetRGB(x, chunky_y, 0, 0, 255);
+        **********************************************************************/
         
+        // measure the distance from the left to the contour-------------------
+        
+        // change these thresholds if there are false positives
+        //int min_defect_dist = (int)(0.4*height);
+       // int max_defect_dist = (int)(0.8*height);
+        //int finger_width = (int)(0.1*width);
+        int defect_threshold = (int)(width*0.05);
+        int y0_length = 0;
+        int y_new_length = 0;
+        int defects_count = 1; // middle finger
+        int end_of_line = 0;
+        
+        // initializing y0_length
+        for (int x = 0; x < width; x++)
+        {
+            int red = (contourBMP.GetRed(x, chunky_y));
+            int green = (contourBMP.GetGreen(x, chunky_y));
+            int blue = (contourBMP.GetBlue(x, chunky_y));
+            
+            if (red == 255 && green == 0 && blue == 0)
+                break;
+            else
+                y0_length++;
+        }
+        
+        
+        for (int y = chunky_y-1; y >= smol_y; y--)
+        {
+            // obtain length for curr line
+            for (int x = 0; x < width; x++)
+            {
+                int red = (contourBMP.GetRed(x, y));
+                int green = (contourBMP.GetGreen(x, y));
+                int blue = (contourBMP.GetBlue(x, y));
+                
+                if (red == 255 && green == 0 && blue == 0)
+                {
+                    end_of_line = x;
+                    break;
+                }
+                else
+                    y_new_length++;
+            }
+                
+            // compare to prev length
+                // diff too large? defect++
+                // else continue
+            if (abs(y_new_length-y0_length) > defect_threshold)
+            {
+                defects_count++;
+                for (int x = 0; x < end_of_line; x++)
+                    convexBMP.SetRGB(x, y, 0, 255, 0);
+            }
+        
+            // prev length = curr length
+            y0_length = y_new_length;
+            y_new_length = 0;
+        }
+        
+        
+        // right limit to contour----------------------------------------------
+        
+        y0_length = 0;
+        y_new_length = 0;
+        
+        // initializing y0_length
+        for (int x = width; x >= 0; x--)
+        {
+            int red = (contourBMP.GetRed(x, chunky_y-9));
+            int green = (contourBMP.GetGreen(x, chunky_y-9));
+            int blue = (contourBMP.GetBlue(x, chunky_y-9));
+            
+            if (red == 255 && green == 0 && blue == 0)
+                break;
+            else
+                y0_length++;
+        }
+        
+        for (int y = chunky_y-10; y >= smol_y; y--)
+        {
+            // obtain length for curr line
+            for (int x = width; x > 0; x--)
+            {
+                int red = (contourBMP.GetRed(x, y));
+                int green = (contourBMP.GetGreen(x, y));
+                int blue = (contourBMP.GetBlue(x, y));
+                
+                if (red == 255 && green == 0 && blue == 0)
+                {
+                    end_of_line = x;
+                    break;
+                }
+                else
+                    y_new_length++;
+            }
+                
+            // compare to prev length
+                // diff too large? defect++
+                // else continue
+            if (abs(y_new_length-y0_length) > defect_threshold)
+            {
+                defects_count++;
+                for (int x = width; x > end_of_line; x--)
+                    convexBMP.SetRGB(x, y, 0, 255, 255);
+            }
+        
+            // prev length = curr length
+            y0_length = y_new_length;
+            y_new_length = 0;
+        }
+        
+        // displaying the answer------------------------------------------------
+        wxString answer = wxString::Format(wxT("%i"), defects_count);
+        wxMessageBox("The number of fingers being held up is: " + answer);
         
         if (300 >= (height*300/width))
         {
