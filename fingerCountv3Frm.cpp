@@ -102,7 +102,7 @@ void fingerCountv3Frm::CreateGUIControls()
 
 	WxEdit2 = new wxTextCtrl(this, ID_WXEDIT2, _("0"), wxPoint(83, 346), wxSize(121, 19), 0, wxDefaultValidator, _("WxEdit2"));
 
-	WxEdit3 = new wxTextCtrl(this, ID_WXEDIT3, _("1000"), wxPoint(82, 368), wxSize(121, 19), 0, wxDefaultValidator, _("WxEdit3"));
+	WxEdit3 = new wxTextCtrl(this, ID_WXEDIT3, _("999"), wxPoint(82, 368), wxSize(121, 19), 0, wxDefaultValidator, _("WxEdit3"));
 
 	dialogChooseImage =  new wxFileDialog(this, _("Choose a file"), _(""), _(""), _("*.bmp*"), wxFD_OPEN);
 
@@ -137,7 +137,54 @@ int orientation(int p_x, int p_y, int q_x, int q_y, int r_x, int r_y)
     return (val > 0)? 1: 2; // clock or counterclock wise 
 } 
 
+void maskLeftmostPixel (wxImage image, int& x_start, int& y_start)
+{
+    int height = image.GetHeight();
+    int width = image.GetWidth();
+    bool stop = false;
+    
+    
+    // we need to start at the bottom left (y = max, x = 0)
+    for (int y = height-1; y >= 0; y--)
+    {
+        for (int x = 0; x < width; x++)
+        {
+            int red = (image.GetRed(x, y));
+            int green = (image.GetGreen(x, y));
+            int blue = (image.GetBlue(x, y));
+            if (red == 0 && green == 0 && blue == 0)
+            {
+                x_start = x;
+                y_start = y;
+                stop = true;
+                break;
+            }
+        }
+        if (stop)
+            break;
+    }
+            
+}
 
+void maskClockwise (int bx, int by, int px, int py, int& cx, int& cy)
+{
+    int x_change = px - bx;
+    int y_change = py - by;
+    cx = bx;
+    cy = by;
+    
+    if (x_change == 0)
+    {
+        cx += y_change;
+    }
+    else
+    {
+        if (y_change == x_change)
+            cx += y_change;
+        else
+            cy -= x_change;
+    }
+}
 
 /*****************************************
 EVENTS
@@ -186,201 +233,7 @@ void fingerCountv3Frm::buttonObtainDefectsClick(wxCommandEvent& event)
 {
     if (openImageFlag)
     {
-    	int height = contourBMP.GetHeight();
-        int width = contourBMP.GetWidth();
-        
-        convexBMP.Create(width, height);
-        bg.Create(width, height);
-        convexBMP.Clear(255);
-        bg.Clear(255);
-        
-        // obtain all the points from the contour
-        
-        vector<int> contour_x;
-        vector<int> contour_y;
-        int smol_x = width+1, chunky_x = 0;
-        int smol_x_element, chunky_x_element;
-        int smol_y = height+1, chunky_y = 0;
-        int smol_y_element, chunky_y_element;
-        for (int y = 1; y < height-1; y++)
-        {
-            for (int x = 1; x < width-1; x++)
-            {
-                int red = (contourBMP.GetRed(x, y));
-                int green = (contourBMP.GetGreen(x, y));
-                int blue = (contourBMP.GetBlue(x, y));
-                if (red==255 && green == 0 && blue == 0)
-                {
-                    if (x < smol_x)
-                    {
-                        smol_x = x;
-                        smol_x_element = contour_x.size();
-                    }
-                    else if (x > chunky_x)
-                    {
-                        chunky_x = x;
-                        chunky_x_element = contour_x.size();
-                    }
-                    if (y < smol_y)
-                    {
-                        smol_y = y;
-                        smol_y_element = contour_y.size();
-                    }
-                    else if (y > chunky_y)
-                    {
-                        chunky_y = y;
-                        chunky_y_element = contour_y.size();
-                    }
-                    contour_x.push_back(x);
-                    contour_y.push_back(y);
-                    convexBMP.SetRGB(x, y, 255, 0, 255);
-                }
-            }
-        }
-        /*******************convex hull****************************************
-        // left line
-        for (int y = smol_y; y <= chunky_y; y++)
-            convexBMP.SetRGB(smol_x, y, 0, 0, 255);
-        
-        // top line
-        for (int x = smol_x; x <= chunky_x; x++)
-            convexBMP.SetRGB(x, smol_y, 0, 0, 255);
-        
-        // right line
-        for (int y = smol_y; y <= chunky_y; y++)
-            convexBMP.SetRGB(chunky_x, y, 0, 0, 255);
-        
-        // bottom line
-        for (int x = smol_x; x <= chunky_x; x++)
-            convexBMP.SetRGB(x, chunky_y, 0, 0, 255);
-        **********************************************************************/
-        
-        // measure the distance from the left to the contour-------------------
-        
-        // change these thresholds if there are false positives
-        //int min_defect_dist = (int)(0.4*height);
-       // int max_defect_dist = (int)(0.8*height);
-        //int finger_width = (int)(0.1*width);
-        int defect_threshold = (int)(width*0.05);
-        int y0_length = 0;
-        int y_new_length = 0;
-        int defects_count = 1; // middle finger
-        int end_of_line = 0;
-        
-        // initializing y0_length
-        for (int x = 0; x < width; x++)
-        {
-            int red = (contourBMP.GetRed(x, chunky_y));
-            int green = (contourBMP.GetGreen(x, chunky_y));
-            int blue = (contourBMP.GetBlue(x, chunky_y));
-            
-            if (red == 255 && green == 0 && blue == 0)
-                break;
-            else
-                y0_length++;
-        }
-        
-        
-        for (int y = chunky_y-1; y >= smol_y; y--)
-        {
-            // obtain length for curr line
-            for (int x = 0; x < width; x++)
-            {
-                int red = (contourBMP.GetRed(x, y));
-                int green = (contourBMP.GetGreen(x, y));
-                int blue = (contourBMP.GetBlue(x, y));
-                
-                if (red == 255 && green == 0 && blue == 0)
-                {
-                    end_of_line = x;
-                    break;
-                }
-                else
-                    y_new_length++;
-            }
-                
-            // compare to prev length
-                // diff too large? defect++
-                // else continue
-            if (abs(y_new_length-y0_length) > defect_threshold)
-            {
-                defects_count++;
-                for (int x = 0; x < end_of_line; x++)
-                    convexBMP.SetRGB(x, y, 0, 255, 0);
-            }
-        
-            // prev length = curr length
-            y0_length = y_new_length;
-            y_new_length = 0;
-        }
-        
-        
-        // right limit to contour----------------------------------------------
-        
-        y0_length = 0;
-        y_new_length = 0;
-        
-        // initializing y0_length
-        for (int x = width; x >= 0; x--)
-        {
-            int red = (contourBMP.GetRed(x, chunky_y-9));
-            int green = (contourBMP.GetGreen(x, chunky_y-9));
-            int blue = (contourBMP.GetBlue(x, chunky_y-9));
-            
-            if (red == 255 && green == 0 && blue == 0)
-                break;
-            else
-                y0_length++;
-        }
-        
-        for (int y = chunky_y-10; y >= smol_y; y--)
-        {
-            // obtain length for curr line
-            for (int x = width; x > 0; x--)
-            {
-                int red = (contourBMP.GetRed(x, y));
-                int green = (contourBMP.GetGreen(x, y));
-                int blue = (contourBMP.GetBlue(x, y));
-                
-                if (red == 255 && green == 0 && blue == 0)
-                {
-                    end_of_line = x;
-                    break;
-                }
-                else
-                    y_new_length++;
-            }
-                
-            // compare to prev length
-                // diff too large? defect++
-                // else continue
-            if (abs(y_new_length-y0_length) > defect_threshold)
-            {
-                defects_count++;
-                for (int x = width; x > end_of_line; x--)
-                    convexBMP.SetRGB(x, y, 0, 255, 255);
-            }
-        
-            // prev length = curr length
-            y0_length = y_new_length;
-            y_new_length = 0;
-        }
-        
-        // displaying the answer------------------------------------------------
-        wxString answer = wxString::Format(wxT("%i"), defects_count);
-        wxMessageBox("The number of fingers being held up is: " + answer);
-        
-        if (300 >= (height*300/width))
-        {
-            bitmapOutput->SetBitmap(bg.Scale(300, height*300/width));
-            bitmapOutput->SetBitmap(convexBMP.Scale(300, height * 300 / width));
-        }
-        else
-        {
-            bitmapOutput->SetBitmap(bg.Scale(300*width/height, 300));
-            bitmapOutput->SetBitmap(convexBMP.Scale(width*300/height, 300));
-        }
-        
+    	
     }
 
     else
@@ -404,7 +257,7 @@ void fingerCountv3Frm::buttonSaveImageClick(wxCommandEvent& event)
         {
           wxInitAllImageHandlers();
           wxString Path = dialogSaveImage->GetPath();
-          convexBMP.SaveFile(Path);
+          contourBMP.SaveFile(Path);
         }
         else
         {
@@ -424,259 +277,96 @@ void fingerCountv3Frm::buttonGetContourClick(wxCommandEvent& event)
 {
 	if (openImageFlag)
     {
+        // CHANGE THIS BACK TO MASKBMP AFTER DEBUGGING IS OVER
+        
         int height = maskBMP.GetHeight();
         int width = maskBMP.GetWidth();
+        
+        // variables needed for moore's
+        int mask_start_x, mask_start_y;
+        int b_x, b_y;
+        int p_x, p_y;
+        int c_x, c_y;
+        vector<int>mask_x;
+        vector<int>mask_y;
+        
         
         contourBMP.Create(width, height);
         bg.Create(width, height);
         contourBMP.Clear(255);
         bg.Clear(255);
         
+        contourBMP = maskBMP;
         
-        // top to bottom
-        for (int x = 1; x < width-1; x++) 
+        // adding a buffer
+        for (int y = 0; y < height; y ++)
         {
-            for (int y = 1; y < height-1; y++)
+            for (int x = 0; x < width; x ++)
             {
-                int red = (maskBMP.GetRed(x,y));
-                int green = (maskBMP.GetGreen(x,y));
-                int blue = (maskBMP.GetBlue(x,y));
-                
-                if (red == 0 && green == 0 && blue == 0)
-                {
-                    contourBMP.SetRGB(x, y, 255, 0, 0);
-                    // scans right after hitting boundary point
-                    for (int i = x+1; i < width-1; i++)
-                    {
-                        int red = (maskBMP.GetRed(i, y));
-                        int green = (maskBMP.GetGreen(i, y));
-                        int blue = (maskBMP.GetBlue(i, y));
-                        
-                        if (red == 0 && green == 0 && blue == 0)
-                        {
-                            contourBMP.SetRGB(i, y, 255, 0, 0);
-                            
-                            // scans up after going right
-                            for (int j = y-1; j > 0; j--)
-                            {
-                                int red = (maskBMP.GetRed(i, j));
-                                int green = (maskBMP.GetGreen(i, j));
-                                int blue = (maskBMP.GetBlue(i, j));
-                                
-                                if (red == 0 && green == 0 && blue == 0)
-                                {
-                                    contourBMP.SetRGB(i, j, 255, 0, 0);
-                                    break;
-                                }
-                            } 
-                            
-                            break;
-                        }
-                        
-                    }
-                    
-                    // scans left after hittign boundary point
-                    for (int i = x-1; i >0; i--)
-                    {
-                        int red = (maskBMP.GetRed(i, y));
-                        int green = (maskBMP.GetGreen(i, y));
-                        int blue = (maskBMP.GetBlue(i, y));
-                        
-                        if (red == 0 && green == 0 && blue == 0)
-                        {
-                            contourBMP.SetRGB(i, y, 255, 0, 0);
-                            
-                            // scans up after going left
-                            for (int j = y-1; j > 0; j--)
-                            {
-                                int red = (maskBMP.GetRed(i, j));
-                                int green = (maskBMP.GetGreen(i, j));
-                                int blue = (maskBMP.GetBlue(i, j));
-                                
-                                if (red == 0 && green == 0 && blue == 0)
-                                {
-                                    contourBMP.SetRGB(i, j, 255, 0, 0);
-                                    break;
-                                }
-                            } 
-                            
-                            break;
-                        }
-                        
-                    }
-                    break;
-                }
-                   
+                if (x==0||y==0||x==width-1||y==height-1)
+                    contourBMP.SetRGB(x, y, 255, 255, 255);
             }
         }
         
-        // left to right
-        for (int y = 1; y < height-1; y++) 
+        // finding the bottom-left most black pixel
+        maskLeftmostPixel(contourBMP, mask_start_x, mask_start_y);
+        mask_x.push_back(mask_start_x);
+        mask_y.push_back(mask_start_y);
+        contourBMP.SetRGB(mask_start_x, mask_start_y, 255, 0, 0);
+        
+        wxString answer = wxString::Format(wxT("%i"), mask_start_x);
+        wxMessageBox("x coordinate: " + answer);
+        answer = wxString::Format(wxT("%i"), mask_start_y);
+        wxMessageBox("y coordinate: " + answer);
+        
+        p_x = mask_start_x;
+        p_y = mask_start_y;
+        
+        b_x = mask_start_x - 1;
+        b_y = mask_start_y;
+        
+        maskClockwise(b_x, b_y, p_x, p_y, c_x, c_y);
+        
+        answer = wxString::Format(wxT("%i"), c_x);
+        wxMessageBox("c_x: " + answer);
+        answer = wxString::Format(wxT("%i"), c_y);
+        wxMessageBox("c_y: " + answer);
+        
+        bool test = false;
+        
+        while (c_x != mask_start_x && c_y != mask_start_y)
         {
-            for (int x = 1; x < width-1; x++)
+            
+            int red = (contourBMP.GetRed(c_x, c_y));
+            int green = (contourBMP.GetGreen(c_x, c_y));
+            int blue = (contourBMP.GetBlue(c_x, c_y));
+            
+            if (red != 255 && green != 255 && blue != 255)
             {
-                int red = (maskBMP.GetRed(x,y));
-                int green = (maskBMP.GetGreen(x,y));
-                int blue = (maskBMP.GetBlue(x,y));
-                
-                if (red == 0 && green == 0 && blue == 0)
-                {
-                    contourBMP.SetRGB(x, y, 255, 0, 0);
-                    
-                    // this scans downward after hitting a boundary point
-                    for (int i = y+1; i < height-1; i++)
-                    {
-                        int red = (maskBMP.GetRed(x,i));
-                        int green = (maskBMP.GetGreen(x,i));
-                        int blue = (maskBMP.GetBlue(x,i));
-                        
-                        if (red == 0 && green == 0 && blue == 0)
-                        {
-                            contourBMP.SetRGB(x, i, 255, 0, 0);
-                            break;
-                        }
-                        
-                    }
-                    
-                    // this scans upwards after hitting a boundary point
-                    for (int i = y-1; i >0; i--)
-                    {
-                        int red = (maskBMP.GetRed(x,i));
-                        int green = (maskBMP.GetGreen(x,i));
-                        int blue = (maskBMP.GetBlue(x,i));
-                        
-                        if (red == 0 && green == 0 && blue == 0)
-                        {
-                            contourBMP.SetRGB(x, i, 255, 0, 0);
-                            break;
-                        }
-                        
-                    }
-                    break;
-                }
+                mask_x.push_back(c_x);
+                mask_y.push_back(c_y);
+                contourBMP.SetRGB(c_x, c_y, 255, 0, 0);
+                b_x = p_x;
+                b_y = p_y;
+                p_x = c_x;
+                p_y = c_y;
+                maskClockwise(b_x, b_y, p_x, p_y, c_x, c_y);
             }
-        }
-        // right to left
-        for (int y = 1; y < height-1; y++) 
-        {
-            for (int x = width-1; x > 0; x--)
+            else
             {
-                int red = (maskBMP.GetRed(x,y));
-                int green = (maskBMP.GetGreen(x,y));
-                int blue = (maskBMP.GetBlue(x,y));
-                
-                if (red == 0 && green == 0 && blue == 0)
+                b_x = c_x;
+                b_y = c_y;
+                maskClockwise(b_x, b_y, p_x, p_y, c_x, c_y);
+                if (!test)
                 {
-                    contourBMP.SetRGB(x, y, 255, 0, 0);
-                    
-                    // scan down
-                    for (int i = y+1; i < height-1; i++)
-                    {
-                        int red = (maskBMP.GetRed(x,i));
-                        int green = (maskBMP.GetGreen(x,i));
-                        int blue = (maskBMP.GetBlue(x,i));
-                        
-                        if (red == 0 && green == 0 && blue == 0)
-                        {
-                            contourBMP.SetRGB(x, i, 255, 0, 0);
-                            break;
-                        }
-                        
-                    }
-                    
-                    // this scans upwards after hitting a boundary point
-                    for (int i = y-1; i >0; i--)
-                    {
-                        int red = (maskBMP.GetRed(x,i));
-                        int green = (maskBMP.GetGreen(x,i));
-                        int blue = (maskBMP.GetBlue(x,i));
-                        
-                        if (red == 0 && green == 0 && blue == 0)
-                        {
-                            contourBMP.SetRGB(x, i, 255, 0, 0);
-                            break;
-                        }
-                        
-                    }
-                    break;
+                    test = true;
+                    wxMessageBox("red val = " + wxString::Format(wxT("%i"), c_x));
                 }
-                   
             }
         }
         
-        // bottom to top
-        for (int x = 1; x < width-1; x++) 
-        {
-            for (int y = height-1; y > 0; y--)
-            {
-                int red = (maskBMP.GetRed(x,y));
-                int green = (maskBMP.GetGreen(x,y));
-                int blue = (maskBMP.GetBlue(x,y));
-                
-                if (red == 0 && green == 0 && blue == 0)
-                {
-                    contourBMP.SetRGB(x, y, 255, 0, 0);
-                    
-                    // scans right after hitting boundary point
-                    for (int i = x+1; i < width-1; i++)
-                    {
-                        int red = (maskBMP.GetRed(i, y));
-                        int green = (maskBMP.GetGreen(i, y));
-                        int blue = (maskBMP.GetBlue(i, y));
-                        
-                        if (red == 0 && green == 0 && blue == 0)
-                        {
-                            contourBMP.SetRGB(i, y, 255, 0, 0);
-                            // scans down after going right
-                            for (int j = y+1; j < height-1; j++)
-                            {
-                                int red = (maskBMP.GetRed(i, j));
-                                int green = (maskBMP.GetGreen(i, j));
-                                int blue = (maskBMP.GetBlue(i, j));
-                                
-                                if (red == 0 && green == 0 && blue == 0)
-                                {
-                                    contourBMP.SetRGB(i, j, 255, 0, 0);
-                                    break;
-                                }
-                            } //
-                            break;
-                        }
-                        
-                    }
-                    
-                    // scans left after hittign boundary point
-                    for (int i = x-1; i >0; i--)
-                    {
-                        int red = (maskBMP.GetRed(i, y));
-                        int green = (maskBMP.GetGreen(i, y));
-                        int blue = (maskBMP.GetBlue(i, y));
-                        
-                        if (red == 0 && green == 0 && blue == 0)
-                        {
-                            contourBMP.SetRGB(i, y, 255, 0, 0);
-                            // scans down after going left
-                            for (int j = y+1; j < height-1; j++)
-                            {
-                                int red = (maskBMP.GetRed(i, j));
-                                int green = (maskBMP.GetGreen(i, j));
-                                int blue = (maskBMP.GetBlue(i, j));
-                                
-                                if (red == 0 && green == 0 && blue == 0)
-                                {
-                                    contourBMP.SetRGB(i, j, 255, 0, 0);
-                                    break;
-                                }
-                            }//
-                            break;
-                        }
-                        
-                    }
-                    break;
-                }
-                   
-            }
-        }
+        answer = wxString::Format(wxT("%i"), mask_x.size());
+        wxMessageBox("number of contour points: " + answer);
         
         // display
         if (300 >= (height*300/width))
@@ -736,6 +426,7 @@ void fingerCountv3Frm::buttonObtainMaskClick(wxCommandEvent& event)
             G = cropBMP.GetGreen(col,row);
             B = cropBMP.GetBlue(col,row);
             
+            // change the 2nd bound to < when DEBUGGING is over
             if(R>REDLowerThreshold && R<REDUpperThreshold && G>GREENLowerThreshold && G<GREENUpperThreshold && B>BLUELowerThreshold && B<BLUEUpperThreshold)
             {
                 maskBMP.SetRGB(col,row,0,0,0);
