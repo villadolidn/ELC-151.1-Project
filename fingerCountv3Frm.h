@@ -27,8 +27,9 @@
 //wxDev-C++ designer will remove them. Add custom headers after the block.
 ////Header Include Start
 #include <wx/filedlg.h>
-#include <wx/statusbr.h>
+#include <wx/textctrl.h>
 #include <wx/stattext.h>
+#include <wx/statusbr.h>
 #include <wx/button.h>
 #include <wx/statbmp.h>
 ////Header Include End
@@ -53,6 +54,12 @@ class fingerCountv3Frm : public wxFrame
 		void buttonGetContourClick(wxCommandEvent& event);
 		void fingerCountv3FrmActivate(wxActivateEvent& event);
 		void buttonGetHullClick(wxCommandEvent& event);
+		void WxButton1Click(wxCommandEvent& event);
+		void WxEdit1Updated(wxCommandEvent& event);
+		void WxEdit2Updated(wxCommandEvent& event);
+		void WxEdit3Updated(wxCommandEvent& event);
+		void buttonCropImageClick(wxCommandEvent& event);
+		void WxEdit1Updated0(wxCommandEvent& event);
 		
 	private:
 		//Do not add custom control declarations between
@@ -61,17 +68,57 @@ class fingerCountv3Frm : public wxFrame
 		////GUI Control Declaration Start
 		wxFileDialog *dialogSaveImage;
 		wxFileDialog *dialogChooseImage;
-		wxButton *buttonGetHull;
+		wxTextCtrl *WxEdit3;
+		wxTextCtrl *WxEdit2;
+		wxTextCtrl *WxEdit1;
+		wxButton *buttonCropImage;
+		wxStaticText *WxStaticText3;
+		wxStaticText *WxStaticText2;
+		wxStaticText *WxStaticText1;
 		wxButton *buttonGetContour;
 		wxButton *buttonSaveImage;
 		wxStatusBar *WxStatusBar1;
-		wxStaticText *labelFingerCount;
 		wxButton *buttonObtainDefects;
 		wxButton *buttonObtainMask;
 		wxButton *buttonInsertImage;
 		wxStaticBitmap *bitmapOutput;
 		wxStaticBitmap *bitmapInput;
 		////GUI Control Declaration End
+		
+		
+		
+		//Color Mask Thresholds:
+
+        int REDLowerThreshold;
+        int REDUpperThreshold;
+        
+        int GREENLowerThreshold;
+        int GREENUpperThreshold;
+        
+        int BLUELowerThreshold;
+        int BLUEUpperThreshold;
+        
+        //Cropping Information
+        double xcoordinate;
+        double ycoordinate;
+        double sidelength;
+        
+        //wxImage Declarations
+        wxImage input;
+        wxImage scaledinput;
+        wxImage maskBMP;
+        wxImage cropcanvas;
+        wxImage cropBMP;
+        wxImage contourBMP;
+        wxImage convexBMP;
+        wxImage defectsBMP;
+        wxImage bg;
+        
+        //Error image
+        int cropready;
+        wxImage error;
+        
+        bool openImageFlag;
 		
 	private:
 		//Note: if you receive any error with these enum IDs, then you need to
@@ -81,11 +128,16 @@ class fingerCountv3Frm : public wxFrame
 		enum
 		{
 			////GUI Enum Control ID Start
-			ID_BUTTONGETHULL = 1011,
+			ID_WXEDIT3 = 1022,
+			ID_WXEDIT2 = 1021,
+			ID_WXEDIT1 = 1020,
+			ID_BUTTONCROPIMAGE = 1019,
+			ID_WXSTATICTEXT3 = 1018,
+			ID_WXSTATICTEXT2 = 1017,
+			ID_WXSTATICTEXT1 = 1016,
 			ID_BUTTONGETCONTOUR = 1010,
 			ID_BUTTONSAVEIMAGE = 1009,
 			ID_WXSTATUSBAR1 = 1007,
-			ID_LABELFINGERCOUNT = 1006,
 			ID_BUTTONOBTAINDEFECTS = 1005,
 			ID_BUTTONOBTAINMASK = 1004,
 			ID_BUTTONINSERTIMAGE = 1003,
