@@ -134,10 +134,12 @@ int orientation(int p_x, int p_y, int q_x, int q_y, int r_x, int r_y)
               (q_x - p_x) * (r_y - q_y); 
   
     if (val == 0) return 0;  // colinear 
-    return (val > 0)? 1: 2; // clock or counterclock wise 
+    return (val > 0)? 2: 1; // clock or counterclock wise 
 } 
 
-void maskLeftmostPixel (wxImage image, int& x_start, int& y_start)
+//void convexHull(vector<int> contour_x, vector<int> contour_y, vector<int> &out_x, vector<int> &out_y, int n, int
+
+void contourLeftmostPixel (wxImage image, int& x_start, int& y_start)
 {
     int height = image.GetHeight();
     int width = image.GetWidth();
@@ -166,7 +168,7 @@ void maskLeftmostPixel (wxImage image, int& x_start, int& y_start)
             
 }
 
-void maskClockwise (int bx, int by, int px, int py, int& cx, int& cy)
+void contourClockwise (int bx, int by, int px, int py, int& cx, int& cy)
 {
     int x_change = px - bx;
     int y_change = py - by;
@@ -233,7 +235,195 @@ void fingerCountv3Frm::buttonObtainDefectsClick(wxCommandEvent& event)
 {
     if (openImageFlag)
     {
-    	
+        convexBMP = contourBMP;
+        int height = convexBMP.GetHeight();
+        int width = convexBMP.GetWidth();
+        vector<int> contour_x;
+        vector<int> contour_y;
+        vector<int> hull_x;
+        vector<int> hull_y;
+        vector<int> drawn_hull_x;
+        vector<int> drawn_hull_y;
+        vector<int> contour_defect_indices;
+        int leftmost = width + 1;
+        int leftmost_index = 0;
+        int defect_count = 0;
+        
+        // let's obtain all the contour points---------------------------------
+        // and store them in vectors
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                int red = (convexBMP.GetRed(x, y));
+                int green = (convexBMP.GetGreen(x, y));
+                int blue = (convexBMP.GetBlue(x, y));
+                
+                if (red == 255 && green != 255 && blue != 255)
+                {
+                    // stores the leftmost x_value and its index in the vector
+                    if (x < leftmost)
+                    {
+                        leftmost_index = contour_x.size();
+                        leftmost = x;
+                    }
+                    contour_x.push_back(x);
+                    contour_y.push_back(y);
+                }
+            }
+        }
+        int n = contour_x.size();
+        
+        // jarvis' algorithm --------------------------------------------------
+        
+        int p = leftmost_index, q;
+        bool firstIteration = true;
+        do
+        {
+            convexBMP.SetRGB(contour_x[p], contour_y[p], 0, 255, 0);
+            hull_x.push_back(contour_x[p]);
+            hull_y.push_back(contour_y[p]);
+            
+            q = (p+1)%n;
+            
+            for (int i = 0; i < n; i++)
+            {
+                int orientation_result = orientation(
+                contour_x[p], contour_y[p], 
+                contour_x[i], contour_y[i], 
+                contour_x[q], contour_y[q]);
+                if (orientation_result == 1)
+                    q = i;
+            }
+            
+            p = q;
+            
+        } while (p != leftmost_index);
+        
+        // now that we have the convex hull points ----------------------------
+        // we gotta draw the lines (Bresenham's line algorithm)
+        
+        for (int i = 1; i < hull_x.size(); i++)
+        {
+            float x1 = hull_x[i-1], y1 = hull_y[i-1];
+            float x2 = hull_x[i], y2 = hull_y[i];
+            
+            bool steepness = (fabs(y2-y1) > fabs(x2-x1));
+            
+            if (steepness)
+            {
+                swap(x1, y1);
+                swap(x2, y2);
+            }
+            
+            if (x1 > x2)
+            {
+                swap(x1, x2);
+                swap(y1, y2);
+            }
+            
+            float dx = x2 - x1;
+            float dy = fabs(y2-y1);
+            
+            float error = dx / 2.0f;
+            int ystep = (y1 < y2) ? 1 : -1;
+            int y = (int)y1;
+            
+            int max_x = (int)x2;
+            
+            for (int x = (int)x1; x < max_x; x++)
+            {
+                if (steepness)
+                {
+                    
+                    drawn_hull_x.push_back(y);
+                    drawn_hull_y.push_back(x);
+                    convexBMP.SetRGB(y, x, 0, 255, 0);
+                }
+                else
+                {
+                    drawn_hull_x.push_back(x);
+                    drawn_hull_y.push_back(y);
+                    convexBMP.SetRGB(x, y, 0, 255, 0);
+                }
+                
+                error -= dy;
+            
+                if (error < 0)
+                {
+                    y+=ystep;
+                    error +=dx;
+                }
+            }
+        }
+        
+        // to calculate for the convexity defects -----------------------------
+        // 
+        
+        for (int i = 0; i < hull_x.size()-1; i++)
+        {
+            int n = 0; // index for the contour points
+            bool defects_present = false;
+            int dx0 = hull_x[i+1] - hull_x[i];
+            int dy0 = -hull_y[i+1] + hull_y[i];
+            float scale = 0;
+            if (dx0 == 0 && dy0 == 0)
+            {
+                scale = 0;
+            }
+            else
+            {
+                scale = 1 / sqrt(dx0 * dx0 + dy0 * dy0);
+            }
+            
+            while (true)
+            {
+                if (contour_x[n] == hull_x[i+1] && contour_y[n] == hull_y[i+1])
+                {
+                    break;
+                }
+                int dx = contour_x[n] - hull_x[i];
+                int dy = contour_y[n] - hull_y[i];
+                
+                float distance = abs(-dy0 * dx + dx0 * dy) * scale;
+                
+                if (distance > 0)
+                {
+                    // wxMessageBox("eyy there's a defect!");
+                    defects_present = true;
+                    convexBMP.SetRGB(contour_x[n], contour_y[n], 0, 0, 255);
+                }
+                
+                
+                
+                n++;
+                
+            }
+            
+            if  (defects_present)
+            {
+                defects_present = false;
+                defect_count++; // we only want it to count a defect once per convex hull vector
+            }
+                
+        }
+        
+        
+        // display ------------------------------------------------------------
+        wxString outputString = wxString::Format(wxT("%i"), defect_count);
+        wxMessageBox("Number of Fingers: " + outputString);
+        
+        if (300 >= (height*300/width))
+        {
+            bitmapOutput->SetBitmap(bg.Scale(300, height*300/width));
+            bitmapOutput->SetBitmap(convexBMP.Scale(300, height * 300 / width));
+        }
+        else
+        {
+            bitmapOutput->SetBitmap(bg.Scale(300*width/height, 300));
+            bitmapOutput->SetBitmap(convexBMP.Scale(width*300/height, 300));
+            
+        }
     }
 
     else
@@ -257,7 +447,7 @@ void fingerCountv3Frm::buttonSaveImageClick(wxCommandEvent& event)
         {
           wxInitAllImageHandlers();
           wxString Path = dialogSaveImage->GetPath();
-          contourBMP.SaveFile(Path);
+          convexBMP.SaveFile(Path);
         }
         else
         {
@@ -287,8 +477,6 @@ void fingerCountv3Frm::buttonGetContourClick(wxCommandEvent& event)
         int b_x, b_y;
         int p_x, p_y;
         int c_x, c_y;
-        vector<int>mask_x;
-        vector<int>mask_y;
         
         
         contourBMP.Create(width, height);
@@ -308,16 +496,9 @@ void fingerCountv3Frm::buttonGetContourClick(wxCommandEvent& event)
             }
         }
         
-        // finding the bottom-left most black pixel
-        maskLeftmostPixel(contourBMP, mask_start_x, mask_start_y);
-        mask_x.push_back(mask_start_x);
-        mask_y.push_back(mask_start_y);
+        // finding the bottom-left most black pixel and mark it red
+        contourLeftmostPixel(contourBMP, mask_start_x, mask_start_y);
         contourBMP.SetRGB(mask_start_x, mask_start_y, 255, 0, 0);
-        
-        wxString answer = wxString::Format(wxT("%i"), mask_start_x);
-        wxMessageBox("x coordinate: " + answer);
-        answer = wxString::Format(wxT("%i"), mask_start_y);
-        wxMessageBox("y coordinate: " + answer);
         
         p_x = mask_start_x;
         p_y = mask_start_y;
@@ -325,48 +506,49 @@ void fingerCountv3Frm::buttonGetContourClick(wxCommandEvent& event)
         b_x = mask_start_x - 1;
         b_y = mask_start_y;
         
-        maskClockwise(b_x, b_y, p_x, p_y, c_x, c_y);
-        
-        answer = wxString::Format(wxT("%i"), c_x);
-        wxMessageBox("c_x: " + answer);
-        answer = wxString::Format(wxT("%i"), c_y);
-        wxMessageBox("c_y: " + answer);
+        contourClockwise(b_x, b_y, p_x, p_y, c_x, c_y);
         
         bool test = false;
         
-        while (c_x != mask_start_x && c_y != mask_start_y)
+        while (true)
         {
-            
             int red = (contourBMP.GetRed(c_x, c_y));
             int green = (contourBMP.GetGreen(c_x, c_y));
             int blue = (contourBMP.GetBlue(c_x, c_y));
             
             if (red != 255 && green != 255 && blue != 255)
             {
-                mask_x.push_back(c_x);
-                mask_y.push_back(c_y);
+                // insert c in B by coloring it red
                 contourBMP.SetRGB(c_x, c_y, 255, 0, 0);
+                
+                // let b = p
                 b_x = p_x;
                 b_y = p_y;
+                
+                // let p = c
                 p_x = c_x;
                 p_y = c_y;
-                maskClockwise(b_x, b_y, p_x, p_y, c_x, c_y);
+                
+                // next clockwise pixel from b with respect to p
+                contourClockwise(b_x, b_y, p_x, p_y, c_x, c_y);
             }
             else
             {
+                // let b = c
                 b_x = c_x;
                 b_y = c_y;
-                maskClockwise(b_x, b_y, p_x, p_y, c_x, c_y);
-                if (!test)
-                {
-                    test = true;
-                    wxMessageBox("red val = " + wxString::Format(wxT("%i"), c_x));
-                }
+                
+                // next clockwise pixel
+                contourClockwise(b_x, b_y, p_x, p_y, c_x, c_y);
+                
+            }
+            
+            // once c returns to starting point, stop the algorithm
+            if (c_x == mask_start_x && c_y == mask_start_y)
+            {
+                break;
             }
         }
-        
-        answer = wxString::Format(wxT("%i"), mask_x.size());
-        wxMessageBox("number of contour points: " + answer);
         
         // display
         if (300 >= (height*300/width))
