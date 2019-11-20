@@ -111,7 +111,6 @@ class fingerCountv3Frm : public wxFrame
         wxImage cropBMP;
         wxImage contourBMP;
         wxImage convexBMP;
-        wxImage defectsBMP;
         wxImage bg;
         
         //Error image

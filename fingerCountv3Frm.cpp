@@ -242,12 +242,9 @@ void fingerCountv3Frm::buttonObtainDefectsClick(wxCommandEvent& event)
         vector<int> contour_y;
         vector<int> hull_x;
         vector<int> hull_y;
-        vector<int> drawn_hull_x;
-        vector<int> drawn_hull_y;
-        vector<int> contour_defect_indices;
         int leftmost = width + 1;
         int leftmost_index = 0;
-        int defect_count = 0;
+        int allowable_distance = 10;
         
         // let's obtain all the contour points---------------------------------
         // and store them in vectors
@@ -335,15 +332,10 @@ void fingerCountv3Frm::buttonObtainDefectsClick(wxCommandEvent& event)
             {
                 if (steepness)
                 {
-                    
-                    drawn_hull_x.push_back(y);
-                    drawn_hull_y.push_back(x);
                     convexBMP.SetRGB(y, x, 0, 255, 0);
                 }
                 else
                 {
-                    drawn_hull_x.push_back(x);
-                    drawn_hull_y.push_back(y);
                     convexBMP.SetRGB(x, y, 0, 255, 0);
                 }
                 
@@ -357,60 +349,25 @@ void fingerCountv3Frm::buttonObtainDefectsClick(wxCommandEvent& event)
             }
         }
         
-        // to calculate for the convexity defects -----------------------------
-        // 
+        // here's where we count the convex hull points------------------------
+        // if they're too close together, we skip them :D
         
-        for (int i = 0; i < hull_x.size()-1; i++)
+        int finger_count = -2; // base of the arm counts as a convex hull, so we need to exclude those two points
+        for (int i = 1; i < hull_x.size(); i++)
         {
-            int n = 0; // index for the contour points
-            bool defects_present = false;
-            int dx0 = hull_x[i+1] - hull_x[i];
-            int dy0 = -hull_y[i+1] + hull_y[i];
-            float scale = 0;
-            if (dx0 == 0 && dy0 == 0)
+            int dx = hull_x[i] - hull_x[i-1];
+            int dy = hull_y[i] - hull_y[i-1];
+            int distance = sqrt(dx*dx + dy*dy);
+            if (distance > allowable_distance)
             {
-                scale = 0;
+                convexBMP.SetRGB(hull_x[i], hull_y[i], 0, 0, 255);
+                finger_count++;
             }
-            else
-            {
-                scale = 1 / sqrt(dx0 * dx0 + dy0 * dy0);
-            }
-            
-            while (true)
-            {
-                if (contour_x[n] == hull_x[i+1] && contour_y[n] == hull_y[i+1])
-                {
-                    break;
-                }
-                int dx = contour_x[n] - hull_x[i];
-                int dy = contour_y[n] - hull_y[i];
-                
-                float distance = abs(-dy0 * dx + dx0 * dy) * scale;
-                
-                if (distance > 0)
-                {
-                    // wxMessageBox("eyy there's a defect!");
-                    defects_present = true;
-                    convexBMP.SetRGB(contour_x[n], contour_y[n], 0, 0, 255);
-                }
-                
-                
-                
-                n++;
-                
-            }
-            
-            if  (defects_present)
-            {
-                defects_present = false;
-                defect_count++; // we only want it to count a defect once per convex hull vector
-            }
-                
         }
         
         
         // display ------------------------------------------------------------
-        wxString outputString = wxString::Format(wxT("%i"), defect_count);
+        wxString outputString = wxString::Format(wxT("%i"), finger_count);
         wxMessageBox("Number of Fingers: " + outputString);
         
         if (300 >= (height*300/width))
