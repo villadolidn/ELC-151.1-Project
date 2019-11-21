@@ -188,9 +188,9 @@ void contourClockwise (int bx, int by, int px, int py, int& cx, int& cy)
     }
 }
 
-/*****************************************
+/******************************************************************************
 EVENTS
-*******************************************/
+*******************************************************************************/
 bool openImageFlag = false;
 
 /*
@@ -212,7 +212,7 @@ void fingerCountv3Frm::buttonInsertImageClick(wxCommandEvent& event)
     //Cropping Information
     xcoordinate = 0;
     ycoordinate = 0;
-    sidelength = 1001;
+    sidelength = 999;
     
     
     dialogChooseImage->ShowModal(); // pops open the choose image dialog
@@ -352,7 +352,8 @@ void fingerCountv3Frm::buttonObtainDefectsClick(wxCommandEvent& event)
         // here's where we count the convex hull points------------------------
         // if they're too close together, we skip them :D
         
-        int finger_count = -2; // base of the arm counts as a convex hull, so we need to exclude those two points
+        int finger_count = -2;  // base of the arm counts as a convex hull, 
+								// so we need to exclude those two points
         for (int i = 1; i < hull_x.size(); i++)
         {
             int dx = hull_x[i] - hull_x[i-1];
@@ -565,7 +566,6 @@ void fingerCountv3Frm::buttonObtainMaskClick(wxCommandEvent& event)
             G = cropBMP.GetGreen(col,row);
             B = cropBMP.GetBlue(col,row);
             
-            // change the 2nd bound to < when DEBUGGING is over
             if(R>REDLowerThreshold && R<REDUpperThreshold && G>GREENLowerThreshold && G<GREENUpperThreshold && B>BLUELowerThreshold && B<BLUEUpperThreshold)
             {
                 maskBMP.SetRGB(col,row,0,0,0);
